@@ -1,0 +1,16 @@
+.example-spacer {
+  flex: 1 1 auto;
+}
+
+.active-button {
+  background-color:  color-mix(in srgb, var(--mat-sys-primary) 10%, transparent);
+}
+
+.mat-toolbar {
+  background-color: var(--mat-sys-primary-container);
+  color: var(--mat-sys-on-primary-container);
+}
+
+.icon-button {
+  color: var(--mat-sys-primary);
+}

@@ -1,0 +1,30 @@
+<div class="processes-container">
+  <mat-card *ngFor="let process of processes" class="process-card" appearance="outlined">
+    <mat-card-header>
+      <mat-card-title>{{ process.title }}</mat-card-title>
+      <mat-card-subtitle>{{ process.subtitle }}</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      <p>
+        {{ process.subtitle }}
+      </p>
+    </mat-card-content>
+    <mat-card-actions>
+      <button matButton>
+        <mat-icon>check</mat-icon>
+        {{ process.activeNode }}
+      </button>
+      <button matButton>
+        <mat-icon>schedule</mat-icon>
+        {{ process.successfulExec }} • {{ process.timeAgo }}
+      </button>
+      <span class="example-spacer"></span>
+      <button matIconButton class="icon-button" aria-label="Example icon-button with menu icon">
+        <mat-icon>settings</mat-icon>
+      </button>
+      <button matIconButton class="icon-button" aria-label="Example icon-button with menu icon">
+        <mat-icon>play_arrow</mat-icon>
+      </button>
+    </mat-card-actions>
+  </mat-card>
+</div>
