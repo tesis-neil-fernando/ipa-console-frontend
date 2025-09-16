@@ -1,4 +1,32 @@
-<my-toolbar></my-toolbar>
-    <main>
+<mat-toolbar class="mat-toolbar">
+    <button matIconButton class="icon-button" aria-label="Example icon-button with menu icon">
+        <mat-icon>menu</mat-icon>
+    </button>
+    <button matButton color="accent" routerLink="/home" aria-label="Example icon-button with menu icon">
+        IPA Console
+    </button>
+    <span class="example-spacer"></span>
+    <button matIconButton class="icon-button" aria-label="Example icon-button with menu icon">
+        <mat-icon>notifications</mat-icon>
+    </button>
+    <button matButton color="accent" [matMenuTriggerFor]="account" aria-label="Example icon-button with menu icon">
+        <mat-icon>account_circle</mat-icon>
+        Fernando
+    </button>
+    <mat-menu #account="matMenu">
+        <button mat-menu-item>Preferencias <mat-icon>settings</mat-icon></button>
+        <button mat-menu-item routerLink="/login">Cerrar sesión <mat-icon>logout</mat-icon></button>
+    </mat-menu>
+</mat-toolbar>
+
+<mat-drawer-container class="main-container">
+    <mat-drawer class="sidenav" mode="side" opened>
+        <button matButton routerLinkActive="active-button" routerLink="/dashboard"><mat-icon>dashboard</mat-icon>Panel de control</button>
+        <button matButton routerLinkActive="active-button" routerLink="/processes"><mat-icon>build</mat-icon>Procesos</button>
+        <button matButton routerLinkActive="active-button" routerLink="/logs"><mat-icon>list</mat-icon>Registros</button>
+        <button matButton routerLinkActive="active-button" routerLink="/settings"><mat-icon>settings</mat-icon>Ajustes</button>
+    </mat-drawer>
+    <mat-drawer-content class="content">
         <router-outlet></router-outlet>
-    </main>
+    </mat-drawer-content>
+</mat-drawer-container>

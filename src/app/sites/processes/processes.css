@@ -1,7 +1,5 @@
-/* Cada tarjeta ocupa el 100% del ancho */
-
 .process-card {
-    max-width: 1280px;
+    max-width: 1080px;
     width: 100%;
     margin: 8px;
 
@@ -21,7 +19,6 @@
 }
 
 .processes-container {
-    /* center items  in container*/
     display: flex;
     justify-content: center;
     flex-direction: column;

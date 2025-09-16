@@ -1,0 +1,33 @@
+<div class="page-container">
+    <mat-toolbar class="mat-toolbar">
+        <button matButton color="accent" routerLink="/home" aria-label="Example icon-button with menu icon">
+            <mat-icon>home</mat-icon>
+            IPA Console
+        </button>
+        <span class="example-spacer"></span>
+        <button matIconButton class="icon-button" aria-label="Example icon-button with menu icon">
+            <mat-icon>help</mat-icon>
+        </button>
+    </mat-toolbar>
+    <div class="login-container">
+        <div class="bg-design"></div>
+        <mat-card class="login-card" appearance="outlined">
+            <mat-card-header>
+                <mat-card-title>Iniciar Sesión</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+                <form class="login-form">
+                    <mat-form-field appearance="fill" class="form-item">
+                        <mat-label>Usuario</mat-label>
+                        <input matInput placeholder="Ingrese su usuario" required>
+                    </mat-form-field>
+                    <mat-form-field appearance="fill" class="form-item">
+                        <mat-label>Contraseña</mat-label>
+                        <input matInput type="password" placeholder="Ingrese su contraseña" required>
+                    </mat-form-field>
+                    <button matButton="filled" color="primary" class="form-item" routerLink="/dashboard">Iniciar Sesión</button>
+                </form>
+            </mat-card-content>
+        </mat-card>
+    </div>
+</div>
