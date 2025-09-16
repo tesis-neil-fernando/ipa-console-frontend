@@ -1,8 +1,5 @@
 .process-card {
-    max-width: 1080px;
-    width: 100%;
     margin: 8px;
-
 }
 
 .example-header-image {
@@ -20,9 +17,20 @@
 
 .processes-container {
     display: flex;
-    justify-content: center;
-    flex-direction: column;
-    align-items: center;
+    flex-wrap: wrap-reverse;
+    justify-content: center;;
+}
+
+.processes-list {
+    flex: 1;
+    min-width: 700px;
+}
+
+.process-config {
+    flex: 1;
+    padding: 8px;
+}
+
+.config-card {
     height: 100%;
-    width: 100%;
 }
