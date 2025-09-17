@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { RouterOutlet } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -7,6 +7,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { RouterModule } from '@angular/router';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatListModule } from '@angular/material/list';
+import { AuthService } from '../../services/auth-service';
 
 
 @Component({
@@ -16,5 +17,9 @@ import { MatListModule } from '@angular/material/list';
   styleUrl: './main-layout.css'
 })
 export class MainLayout {
+  private auth = inject(AuthService);
 
+  logout() {
+    this.auth.logout();
+  }
 }

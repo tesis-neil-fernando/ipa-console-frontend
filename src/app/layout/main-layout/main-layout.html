@@ -2,7 +2,7 @@
     <button matIconButton class="icon-button" aria-label="Example icon-button with menu icon">
         <mat-icon>menu</mat-icon>
     </button>
-    <button matButton color="accent" routerLink="/home" aria-label="Example icon-button with menu icon">
+    <button matButton color="accent" routerLink="/console/home" aria-label="Example icon-button with menu icon">
         IPA Console
     </button>
     <span class="example-spacer"></span>
@@ -15,16 +15,16 @@
     </button>
     <mat-menu #account="matMenu">
         <button mat-menu-item>Preferencias <mat-icon>settings</mat-icon></button>
-        <button mat-menu-item routerLink="/login">Cerrar sesión <mat-icon>logout</mat-icon></button>
+        <button mat-menu-item routerLink="/login" (click)="logout()">Cerrar sesión <mat-icon>logout</mat-icon></button>
     </mat-menu>
 </mat-toolbar>
 
 <mat-drawer-container class="main-container mat-app-background">
     <mat-drawer class="sidenav" mode="side" opened>
-        <button matButton routerLinkActive="active-button" routerLink="/dashboard"><mat-icon>dashboard</mat-icon>Panel de control</button>
-        <button matButton routerLinkActive="active-button" routerLink="/processes"><mat-icon>build</mat-icon>Procesos</button>
-        <button matButton routerLinkActive="active-button" routerLink="/logs"><mat-icon>list</mat-icon>Registros</button>
-        <button matButton routerLinkActive="active-button" routerLink="/settings"><mat-icon>settings</mat-icon>Ajustes</button>
+        <button matButton routerLinkActive="active-button" routerLink="/console/dashboard"><mat-icon>dashboard</mat-icon>Panel de control</button>
+        <button matButton routerLinkActive="active-button" routerLink="/console/processes"><mat-icon>build</mat-icon>Procesos</button>
+        <button matButton routerLinkActive="active-button" routerLink="/console/logs"><mat-icon>list</mat-icon>Registros</button>
+        <button matButton routerLinkActive="active-button" routerLink="/console/settings"><mat-icon>settings</mat-icon>Ajustes</button>
     </mat-drawer>
     <mat-drawer-content class="content">
         <router-outlet></router-outlet>

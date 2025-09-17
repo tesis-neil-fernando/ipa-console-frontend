@@ -1,6 +1,7 @@
 <div class="page-container">
     <mat-toolbar class="mat-toolbar">
-        <button matButton color="accent" routerLink="/home" aria-label="Example icon-button with menu icon">
+        <button matButton color="accent" routerLink="/console/dashboard"
+            aria-label="Example icon-button with menu icon">
             <mat-icon>home</mat-icon>
             IPA Console
         </button>
@@ -16,16 +17,16 @@
                 <mat-card-title>Iniciar Sesión</mat-card-title>
             </mat-card-header>
             <mat-card-content>
-                <form class="login-form">
-                    <mat-form-field appearance="fill" class="form-item">
+                <form class="login-form" (ngSubmit)="login()">
+                    <mat-form-field   appearance="fill" class="form-item">
                         <mat-label>Usuario</mat-label>
-                        <input matInput placeholder="Ingrese su usuario" required>
+                        <input matInput type="text" [(ngModel)]="username" name="username" placeholder="Ingrese su usuario" required>
                     </mat-form-field>
                     <mat-form-field appearance="fill" class="form-item">
                         <mat-label>Contraseña</mat-label>
-                        <input matInput type="password" placeholder="Ingrese su contraseña" required>
+                        <input matInput [(ngModel)]="password" type="password" name="password" placeholder="Ingrese su contraseña" required>
                     </mat-form-field>
-                    <button matButton="filled" color="primary" class="form-item" routerLink="/dashboard">Iniciar Sesión</button>
+                    <button matButton="filled" color="primary" class="form-item">Iniciar Sesión</button>
                 </form>
             </mat-card-content>
         </mat-card>
