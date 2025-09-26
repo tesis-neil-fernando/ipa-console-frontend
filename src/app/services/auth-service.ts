@@ -12,21 +12,12 @@ export class AuthService {
   private http = inject(HttpClient);
 
   login(credentials: { username: string; password: string }) {
-    console.log('Attempting login with credentials:', credentials);
     return this.http.post<{ accessToken: string }>(`${this.apiUrl}/signin`, credentials).pipe(
       tap(res => this.setToken(res.accessToken))
     );
   }
-
-  isTokenValid(): boolean {
-    
-    this.http.get<{ valid: boolean }>(`${this.apiUrl}/valid`).subscribe(
-      response => {
-        console.log('Checking token validity', response);
-        return response;
-      }
-    );
-    return false;
+  isSessionValid() {
+    return this.http.get<boolean>(`${this.apiUrl}/valid`);
   }
 
   setToken(token: string) {

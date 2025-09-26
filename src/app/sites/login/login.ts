@@ -33,8 +33,9 @@ export class Login implements OnInit {
   password = '';
 
   login() {
-    this.auth.login({ username: this.username, password: this.password }).subscribe(success => {
-      if (success) {
+    this.auth.login({ username: this.username, password: this.password }).subscribe(response => {
+      console.log('Login response:', response);
+      if (response) {
         this.router.navigate(['/console/dashboard']);
       } else {
         console.error('Login failed');
