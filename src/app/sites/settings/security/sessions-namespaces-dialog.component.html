@@ -1,0 +1,115 @@
+<h2 mat-dialog-title>Gestión de sesiones & Alcance por namespace</h2>
+
+<mat-dialog-content>
+  <!-- =======================
+       SESIONES ACTIVAS
+       ======================= -->
+  <section>
+    <h3 style="margin:0 0 8px; display:flex; align-items:center; gap:8px;">
+      <mat-icon>manage_accounts</mat-icon> Sesiones activas
+      <span style="flex:1 1 auto;"></span>
+      <button
+        mat-stroked-button
+        color="warn"
+        (click)="terminateOthers()"
+        matTooltip="Cerrar todas las sesiones excepto esta"
+      >
+        Cerrar otras sesiones
+      </button>
+    </h3>
+
+    <!-- Usamos *ngIf para evitar null en dataSource -->
+    <ng-container *ngIf="(sessions$ | async) as sessions">
+      <table mat-table [dataSource]="sessions" class="mat-elevation-z1" style="width:100%">
+
+        <ng-container matColumnDef="device">
+          <th mat-header-cell *matHeaderCellDef> Dispositivo </th>
+          <td mat-cell *matCellDef="let s">
+            <mat-icon style="vertical-align:middle; margin-right:6px;">{{ iconForSession(s) }}</mat-icon>
+            {{ s.device }}
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="ip">
+          <th mat-header-cell *matHeaderCellDef> IP </th>
+          <td mat-cell *matCellDef="let s"> {{ s.ip }} </td>
+        </ng-container>
+
+        <ng-container matColumnDef="location">
+          <th mat-header-cell *matHeaderCellDef> Ubicación </th>
+          <td mat-cell *matCellDef="let s"> {{ s.location || '—' }} </td>
+        </ng-container>
+
+        <ng-container matColumnDef="lastActivity">
+          <th mat-header-cell *matHeaderCellDef> Última actividad </th>
+          <td mat-cell *matCellDef="let s"> {{ s.lastActivity }} </td>
+        </ng-container>
+
+        <ng-container matColumnDef="current">
+          <th mat-header-cell *matHeaderCellDef> Actual </th>
+          <td mat-cell *matCellDef="let s">
+            <mat-chip *ngIf="s.current" color="primary" selected>Esta sesión</mat-chip>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef> Acciones </th>
+          <td mat-cell *matCellDef="let s">
+            <button mat-button color="warn" (click)="terminate(s.id)" [disabled]="s.current">Cerrar</button>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+      </table>
+
+      <div *ngIf="sessions.length === 0" style="opacity:.7; padding:8px 0;">
+        No hay sesiones activas.
+      </div>
+    </ng-container>
+  </section>
+
+  <mat-divider></mat-divider>
+
+  <!-- =======================
+       NAMESPACES / ALCANCE
+       ======================= -->
+  <section>
+    <h3 style="margin:16px 0 8px; display:flex; align-items:center; gap:8px;">
+      <mat-icon>domain</mat-icon> Alcance por namespace
+    </h3>
+
+    <ng-container *ngIf="(scopes$ | async) as scopes">
+      <div style="display:grid; gap:12px;">
+        <div class="scope-card" *ngFor="let sc of scopes">
+          <div class="scope-title">
+            <mat-icon>account_tree</mat-icon>
+            <span class="ns-badge">{{ sc.namespace }}</span>
+          </div>
+
+          <div style="display:flex; flex-wrap:wrap; gap:12px;">
+            <div>
+              <div style="font-weight:600; opacity:.8; margin-bottom:6px;">Roles</div>
+              <mat-chip-set>
+                <mat-chip *ngFor="let r of sc.roles" selected>{{ r }}</mat-chip>
+              </mat-chip-set>
+            </div>
+
+            <div>
+              <div style="font-weight:600; opacity:.8; margin-bottom:6px;">Permisos visibles</div>
+              <mat-chip-set>
+                <mat-chip *ngFor="let p of sc.permissions" selected>{{ p }}</mat-chip>
+              </mat-chip-set>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="scopes.length === 0" style="opacity:.7;">Sin namespaces asignados.</div>
+      </div>
+    </ng-container>
+  </section>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="close()">Cerrar</button>
+</mat-dialog-actions>
