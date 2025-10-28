@@ -1,0 +1,46 @@
+<h2 mat-dialog-title>Administrar usuarios</h2>
+
+<div mat-dialog-content>
+  <table mat-table [dataSource]="dataSource" class="mat-elevation-z2" style="width:100%">
+    <ng-container matColumnDef="username">
+      <th mat-header-cell *matHeaderCellDef>Usuario</th>
+      <td mat-cell *matCellDef="let r">{{ r.username }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="enabled">
+      <th mat-header-cell *matHeaderCellDef>Estado</th>
+      <td mat-cell *matCellDef="let r">
+        <mat-chip [color]="r.enabled ? 'primary' : 'warn'" selected>
+          {{ r.enabled ? 'Activo' : 'Desactivado' }}
+        </mat-chip>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="roles">
+      <th mat-header-cell *matHeaderCellDef>Roles</th>
+      <td mat-cell *matCellDef="let r">
+        <mat-chip-listbox>
+          <mat-chip *ngFor="let x of r.roles" selected>{{ x }}</mat-chip>
+        </mat-chip-listbox>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="acciones">
+      <th mat-header-cell *matHeaderCellDef>Acciones</th>
+      <td mat-cell *matCellDef="let r">
+        <button mat-stroked-button color="primary" (click)="edit(r)">
+          <mat-icon>edit</mat-icon>&nbsp;Editar
+        </button>
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+  </table>
+
+  <mat-paginator [pageSize]="5" [pageSizeOptions]="[5,10,20]" showFirstLastButtons></mat-paginator>
+</div>
+
+<div mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close>Cerrar</button>
+</div>
