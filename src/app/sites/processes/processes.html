@@ -38,8 +38,9 @@
         <button matIconButton class="icon-button" aria-label="Abrir configuración" (click)="selectProcess(process)">
           <mat-icon>settings</mat-icon>
         </button>
-        <button matIconButton class="icon-button" aria-label="Ejecutar proceso" [disabled]="!process.canExecute">
-          <mat-icon>play_arrow</mat-icon>
+        <button matIconButton class="icon-button" aria-label="Ejecutar proceso" (click)="startProcess(process)" [disabled]="!process.canExecute || isStarting(process)">
+          <mat-icon *ngIf="!isStarting(process)">play_arrow</mat-icon>
+          <mat-icon *ngIf="isStarting(process)">autorenew</mat-icon>
         </button>
       </mat-card-actions>
     </mat-card>

@@ -7,11 +7,13 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { FormsModule } from '@angular/forms';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { ProcessService } from '../../services/process-service';
 
 @Component({
   selector: 'app-processes',
-  imports: [CommonModule, MatCardModule, MatButtonModule, MatIconModule, MatProgressSpinnerModule, MatFormFieldModule, MatInputModule, FormsModule],
+  imports: [CommonModule, MatCardModule, MatButtonModule, MatIconModule, MatProgressSpinnerModule, MatFormFieldModule, MatInputModule, FormsModule, MatSnackBarModule],
   templateUrl: './processes.html',
   styleUrls: ['./processes.css']
 })
@@ -20,6 +22,10 @@ export class Processes implements OnInit {
   loading = false;
   error: string | null = null;
   private processService = inject(ProcessService);
+  private snackBar = inject(MatSnackBar);
+
+  // Track processes that are being started to disable buttons / show feedback
+  startingProcessIds: Set<string> = new Set<string>();
 
   // Selected process for editing
   selectedProcess: any = null;
@@ -56,6 +62,46 @@ export class Processes implements OnInit {
     // create a shallow copy for metadata (name/description) and a copy for parameters
     this.editedProcess = { ...process };
     this.editedParameters = (process.parameters || []).map((p: any) => ({ ...p }));
+  }
+
+  isStarting(process: any): boolean {
+    if (!process) return false;
+    return this.startingProcessIds.has(String(process.id));
+  }
+
+  startProcess(process: any) {
+    if (!process || !process.id) return;
+    const id = String(process.id);
+    if (this.startingProcessIds.has(id)) return; // already starting
+
+    this.startingProcessIds.add(id);
+    this.processService.startProcess(id).subscribe({
+      next: (res: any) => {
+        // Expected response shape:
+        // { success: boolean, message: string, data: string | object }
+        const success = !!res?.success;
+        const message = res?.message ?? (success ? 'Proceso iniciado' : 'Error al iniciar proceso');
+
+        // Show only the server-provided message for a subtle notification
+        const displayMessage = res?.message ?? (res?.success ? 'Proceso iniciado' : 'No se pudo iniciar el proceso');
+        this.snackBar.open(displayMessage, 'Cerrar', { duration: 4000 });
+
+        // remove from starting set
+        this.startingProcessIds.delete(id);
+
+        // refresh list only on success so UI reflects new execution
+        if (res?.success) {
+          this.loadProcesses();
+        }
+      },
+      error: (err: any) => {
+        console.error('Error starting process', err);
+        const errMsg = err?.error?.message ?? err?.message ?? err?.statusText ?? 'Error de red';
+        // Show only the error message string (subtle)
+        this.snackBar.open(errMsg, 'Cerrar', { duration: 4000 });
+        this.startingProcessIds.delete(id);
+      }
+    });
   }
 
   cancelEdit() {
