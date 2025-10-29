@@ -28,7 +28,7 @@ export class UserAdminDialogComponent implements OnInit {
   private ref       = inject(MatDialogRef<UserAdminDialogComponent>);
 
   // tabla
-  displayedColumns: string[] = ['username', 'enabled', 'roles', 'actions'];
+  displayedColumns: string[] = ['username', 'enabled', 'roles', 'namespaces', 'actions'];
   users: UserView[] = [];
 
   // paginación

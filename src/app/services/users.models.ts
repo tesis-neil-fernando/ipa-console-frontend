@@ -3,6 +3,7 @@ export interface UserView {
   username: string;
   enabled: boolean;
   roles: string[];
+  namespaces?: string[];
 }
 
 /** Página genérica compatible con Spring Data */
@@ -15,3 +16,4 @@ export interface PageResp<T> {
   first: boolean;
   last: boolean;
 }
+
