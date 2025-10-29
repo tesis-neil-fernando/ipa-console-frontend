@@ -34,3 +34,23 @@
 .config-card {
     height: 100%;
 }
+
+.processes-loading, .processes-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.processes-loading mat-progress-spinner {
+    margin-bottom: 12px;
+}
+
+/* Disabled state for icon buttons: make them visually distinct (muted color, no pointer) */
+.icon-button:disabled,
+.icon-button[disabled] {
+    color: rgba(0, 0, 0, 0.38); /* muted/disabled color */
+    opacity: 0.9;
+    cursor: default;
+}

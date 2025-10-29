@@ -1,29 +1,44 @@
 <div class="processes-container">
-  <div class="processes-list">
+  <div *ngIf="loading" class="processes-loading">
+    <mat-progress-spinner mode="indeterminate" diameter="48"></mat-progress-spinner>
+    <div>Cargando procesos...</div>
+  </div>
+  <div *ngIf="error" class="processes-error">
+    <mat-card class="error-card" appearance="outlined">
+      <mat-card-header>
+        <mat-card-title>Error</mat-card-title>
+        <mat-card-subtitle>{{ error }}</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-actions>
+        <button mat-button (click)="loadProcesses()">Reintentar</button>
+      </mat-card-actions>
+    </mat-card>
+  </div>
+  <div class="processes-list" *ngIf="!loading && !error">
     <mat-card *ngFor="let process of processes" class="process-card" appearance="outlined">
       <mat-card-header>
-        <mat-card-title>{{ process.title }}</mat-card-title>
-        <mat-card-subtitle>{{ process.subtitle }}</mat-card-subtitle>
+        <mat-card-title>{{ process.name }}</mat-card-title>
+        <mat-card-subtitle>{{ process.workflowName }}</mat-card-subtitle>
       </mat-card-header>
       <mat-card-content>
         <p>
-          {{ process.subtitle }}
+          {{ process.description }}
         </p>
       </mat-card-content>
       <mat-card-actions>
         <button matButton>
           <mat-icon>check</mat-icon>
-          {{ process.activeNode }}
+          {{ process.active }}
         </button>
         <button matButton>
           <mat-icon>schedule</mat-icon>
-          {{ process.successfulExec }} • {{ process.timeAgo }}
+          {{ process.status }} • {{ formatTimeAgo(process.startedAt) }}
         </button>
         <span class="example-spacer"></span>
-        <button matIconButton class="icon-button" aria-label="Example icon-button with menu icon">
+        <button matIconButton class="icon-button" aria-label="Abrir configuración" (click)="selectProcess(process)">
           <mat-icon>settings</mat-icon>
         </button>
-        <button matIconButton class="icon-button" aria-label="Example icon-button with menu icon">
+        <button matIconButton class="icon-button" aria-label="Ejecutar proceso" [disabled]="!process.canExecute">
           <mat-icon>play_arrow</mat-icon>
         </button>
       </mat-card-actions>
@@ -36,10 +51,40 @@
         <mat-card-subtitle>Detalles y configuraciones</mat-card-subtitle>
       </mat-card-header>
       <mat-card-content>
-        <p>
-          Selecciona un proceso para ver sus detalles de configuración aquí.
-        </p>
+        <div *ngIf="!selectedProcess">
+          <p>Selecciona un proceso para ver sus detalles de configuración aquí.</p>
+        </div>
+
+        <div *ngIf="selectedProcess">
+          <p>Editando el proceso {{ editedProcess?.name }}</p>
+
+          <div class="process-meta">
+            <mat-form-field appearance="fill" style="width:100%">
+              <mat-label>Nombre</mat-label>
+              <input matInput [(ngModel)]="editedProcess.name" name="proc-name">
+            </mat-form-field>
+
+            <mat-form-field appearance="fill" style="width:100%">
+              <mat-label>Descripción</mat-label>
+              <textarea matInput rows="3" [(ngModel)]="editedProcess.description" name="proc-desc"></textarea>
+            </mat-form-field>
+          </div>
+
+          <div class="params-list">
+            <div *ngFor="let p of editedParameters" class="param-row">
+              <mat-form-field appearance="fill" style="width:100%">
+                <mat-label>{{ p.name }}</mat-label>
+                <input matInput [type]="p.type === 'number' ? 'number' : 'text'" [(ngModel)]="p.value" name="param-{{p.id}}">
+              </mat-form-field>
+            </div>
+          </div>
+        </div>
       </mat-card-content>
+      <mat-card-actions *ngIf="selectedProcess">
+        <span class="example-spacer"></span>
+        <button mat-flat-button color="primary" (click)="updateSelectedProcess()">Actualizar</button>
+        <button mat-button (click)="cancelEdit()">Cancelar</button>
+      </mat-card-actions>
     </mat-card>
   </div>
 </div>
