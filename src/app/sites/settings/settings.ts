@@ -20,7 +20,7 @@ export class Settings {
     this.dialog.open(UserAdminDialogComponent, {
       width: '1200px', minWidth: '1000px', maxWidth: '96vw',
       height: 'auto',  maxHeight: '92vh',
-      panelClass: 'ipa-dialog'
+      panelClass: 'user-admin-dialog'
     });
   }
 

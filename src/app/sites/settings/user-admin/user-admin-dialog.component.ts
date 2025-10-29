@@ -1,56 +1,88 @@
-import { Component, ViewChild } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MatDialog } from '@angular/material/dialog';
-import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
-import { MatTableDataSource, MatTableModule } from '@angular/material/table';
+import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatChipsModule } from '@angular/material/chips';
-import { UserEditDialogComponent, UserView } from './user-edit-dialog.component';
+import { MatIconModule }   from '@angular/material/icon';
+import { MatChipsModule }  from '@angular/material/chips';
+import { MatTableModule }  from '@angular/material/table';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 
-const MOCK_USERS: UserView[] = [
-  { id:1, username:'fschilder',   enabled:true,  roles:['administrador'],           permissions:['administrador','visualizar','ejecutar','editar_parametros'] },
-  { id:2, username:'ntrujillo',   enabled:true,  roles:['inteligencia_comercial'],  permissions:['visualizar','ejecutar'] },
-  { id:3, username:'marketing_u', enabled:false, roles:['marketing'],               permissions:['visualizar'] }
-];
+import { UsersService } from '../../../services/users.service';
+import { UserView } from '../../../services/users.models';
+import { UserEditDialogComponent } from './user-edit-dialog.component';
 
 @Component({
-  selector: 'app-user-admin-dialog',
-  standalone: true,
-  imports: [
-    CommonModule,
-    MatTableModule, MatPaginatorModule,
-    MatButtonModule, MatIconModule, MatChipsModule
-  ],
+  selector   : 'app-user-admin-dialog',
+  standalone : true,
   templateUrl: './user-admin-dialog.component.html',
-  styles: [`
-    :host { display:block; min-width: 1000px; }      /* 👈 listado más ancho */
-    table { width: 100%; }
-    mat-dialog-content { overflow: auto; max-height: 80vh; }
-  `]
+  imports    : [
+    CommonModule,
+    MatDialogModule, MatButtonModule, MatIconModule,
+    MatChipsModule, MatTableModule, MatPaginatorModule
+  ]
 })
-export class UserAdminDialogComponent {
-  displayedColumns = ['username','enabled','roles','acciones'];
-  dataSource = new MatTableDataSource<UserView>(MOCK_USERS);
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
+export class UserAdminDialogComponent implements OnInit {
 
-  constructor(private dialog: MatDialog) {}
+  private usersSvc  = inject(UsersService);
+  private dialog    = inject(MatDialog);
+  private ref       = inject(MatDialogRef<UserAdminDialogComponent>);
 
-  ngAfterViewInit(){ this.dataSource.paginator = this.paginator; }
+  // tabla
+  displayedColumns: string[] = ['username', 'enabled', 'roles', 'actions'];
+  users: UserView[] = [];
 
-  edit(row: UserView){
+  // paginación
+  pageIndex = 0;
+  pageSize  = 5;
+  total     = 0;
+
+  loading = false;
+
+  ngOnInit(): void {
+    this.load();
+  }
+
+  load(): void {
+    this.loading = true;
+    this.usersSvc
+      .list({
+        page: this.pageIndex,
+        size: this.pageSize,
+        sort: 'username,asc'
+      })
+      .subscribe({
+        next: (resp) => {
+          // PageResp<UserView>
+          this.users    = resp.content ?? [];
+          this.total    = resp.totalElements ?? 0;
+          this.pageSize = resp.size ?? this.pageSize;
+          this.pageIndex= resp.number ?? this.pageIndex;
+          this.loading  = false;
+        },
+        error: (err) => {
+          console.error('Error cargando usuarios', err);
+          this.loading = false;
+        }
+      });
+  }
+
+  onPage(e: PageEvent) {
+    this.pageIndex = e.pageIndex;
+    this.pageSize  = e.pageSize;
+    this.load();
+  }
+
+  editar(u: UserView) {
     this.dialog.open(UserEditDialogComponent, {
-      width: '900px',          // 👈 editor más grande
-      minWidth: '820px',
-      maxWidth: '95vw',
-      height: 'auto',
-      maxHeight: '92vh',
-      panelClass: 'ipa-dialog',  // 👈 misma clase global para padding 3mm
-      data: { user: { ...row } }
-    }).afterClosed().subscribe(res => {
-      if(!res) return;
-      const i = this.dataSource.data.findIndex(u => u.id === res.id);
-      if(i>=0){ this.dataSource.data[i] = res; this.dataSource._updateChangeSubscription(); }
+      width: '680px',
+      maxHeight: '90vh',
+      data: { user: u }
+    }).afterClosed().subscribe(changed => {
+      if (changed) this.load();
     });
+  }
+
+  cerrar() {
+    this.ref.close();
   }
 }
