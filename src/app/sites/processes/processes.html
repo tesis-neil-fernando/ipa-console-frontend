@@ -14,78 +14,95 @@
       </mat-card-actions>
     </mat-card>
   </div>
-  <div class="processes-list" *ngIf="!loading && !error">
-    <mat-card *ngFor="let process of processes" class="process-card" appearance="outlined">
-      <mat-card-header>
-        <mat-card-title>{{ process.name }}</mat-card-title>
-        <mat-card-subtitle>{{ process.workflowName }}</mat-card-subtitle>
-      </mat-card-header>
-      <mat-card-content>
-        <p>
-          {{ process.description }}
-        </p>
-      </mat-card-content>
-      <mat-card-actions>
-        <button matButton>
-          <mat-icon>check</mat-icon>
-          {{ process.active }}
-        </button>
-        <button matButton>
-          <mat-icon>schedule</mat-icon>
-          {{ process.status }} • {{ formatTimeAgo(process.startedAt) }}
-        </button>
-        <span class="example-spacer"></span>
-        <button matIconButton class="icon-button" aria-label="Abrir configuración" (click)="selectProcess(process)">
-          <mat-icon>settings</mat-icon>
-        </button>
-        <button matIconButton class="icon-button" aria-label="Ejecutar proceso" (click)="startProcess(process)" [disabled]="!process.canExecute || isStarting(process)">
-          <mat-icon *ngIf="!isStarting(process)">play_arrow</mat-icon>
-          <mat-icon *ngIf="isStarting(process)">autorenew</mat-icon>
-        </button>
-      </mat-card-actions>
-    </mat-card>
+  <div class="processes-actions" *ngIf="!loading && !error">
+    <div class="tools-bar">
+      <button mat-icon-button aria-label="Refrescar procesos" (click)="loadProcesses()" [disabled]="loading"
+        title="Refrescar">
+        <mat-icon>refresh</mat-icon>
+      </button>
+      <mat-checkbox class="ejecutable-btn" [(ngModel)]="showOnlyExecutable">Ejecutable</mat-checkbox>
+      <!-- future tool buttons can go here -->
+    </div>
   </div>
-  <div class="process-config">
-    <mat-card class="config-card" appearance="outlined">
-      <mat-card-header>
-        <mat-card-title>Configuración de proceso</mat-card-title>
-        <mat-card-subtitle>Detalles y configuraciones</mat-card-subtitle>
-      </mat-card-header>
-      <mat-card-content>
-        <div *ngIf="!selectedProcess">
-          <p>Selecciona un proceso para ver sus detalles de configuración aquí.</p>
-        </div>
 
-        <div *ngIf="selectedProcess">
-          <p>Editando el proceso {{ editedProcess?.name }}</p>
-
-          <div class="process-meta">
-            <mat-form-field appearance="fill" style="width:100%">
-              <mat-label>Nombre</mat-label>
-              <input matInput [(ngModel)]="editedProcess.name" name="proc-name">
-            </mat-form-field>
-
-            <mat-form-field appearance="fill" style="width:100%">
-              <mat-label>Descripción</mat-label>
-              <textarea matInput rows="3" [(ngModel)]="editedProcess.description" name="proc-desc"></textarea>
-            </mat-form-field>
+  <div class="processes-main" *ngIf="!loading && !error">
+    <div class="processes-list">
+      <mat-card *ngFor="let process of displayedProcesses" class="process-card" appearance="outlined">
+        <mat-card-header>
+          <mat-card-title>{{ process.name }}</mat-card-title>
+          <mat-card-subtitle>{{ process.workflowName }}</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <p>
+            {{ process.description }}
+          </p>
+        </mat-card-content>
+        <mat-card-actions>
+          <button matButton>
+            <mat-icon>check</mat-icon>
+            {{ process.active }}
+          </button>
+          <button matButton>
+            <mat-icon>schedule</mat-icon>
+            {{ process.status }} • {{ formatTimeAgo(process.startedAt) }}
+          </button>
+          <span class="example-spacer"></span>
+          <button matIconButton class="icon-button" aria-label="Abrir configuración" (click)="selectProcess(process)">
+            <mat-icon>settings</mat-icon>
+          </button>
+          <button matIconButton class="icon-button" aria-label="Ejecutar proceso" (click)="startProcess(process)"
+            [disabled]="!process.canExecute || isStarting(process)">
+            <mat-icon *ngIf="!isStarting(process)">play_arrow</mat-icon>
+            <mat-icon *ngIf="isStarting(process)">autorenew</mat-icon>
+          </button>
+        </mat-card-actions>
+      </mat-card>
+    </div>
+    <div class="process-config">
+      <mat-card class="config-card" appearance="outlined">
+        <mat-card-header>
+          <mat-card-title>
+            Configuración de proceso
+            <span *ngIf="selectedProcess"> [{{ editedProcess?.name }}]</span>
+            <span *ngIf="!selectedProcess"> [sin seleccionar]</span>
+          </mat-card-title>
+          <mat-card-subtitle>Detalles y configuraciones</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div *ngIf="!selectedProcess">
+            <p>Selecciona un proceso para ver sus detalles de configuración aquí.</p>
           </div>
 
-          <div class="params-list">
-            <div *ngFor="let p of editedParameters" class="param-row">
+          <div *ngIf="selectedProcess">
+
+            <div class="process-meta">
               <mat-form-field appearance="fill" style="width:100%">
-                <mat-label>{{ p.name }}</mat-label>
-                <input matInput [type]="p.type === 'number' ? 'number' : 'text'" [(ngModel)]="p.value" name="param-{{p.id}}">
+                <mat-label>Nombre</mat-label>
+                <input matInput [(ngModel)]="editedProcess.name" name="proc-name">
+              </mat-form-field>
+
+              <mat-form-field appearance="fill" style="width:100%">
+                <mat-label>Descripción</mat-label>
+                <textarea matInput rows="3" [(ngModel)]="editedProcess.description" name="proc-desc"></textarea>
               </mat-form-field>
             </div>
+
+            <div class="params-list">
+              <div *ngFor="let p of editedParameters" class="param-row">
+                <mat-form-field appearance="fill" style="width:100%">
+                  <mat-label>{{ p.name }}</mat-label>
+                  <input matInput [type]="p.type === 'number' ? 'number' : 'text'" [(ngModel)]="p.value"
+                    name="param-{{p.id}}">
+                </mat-form-field>
+              </div>
+            </div>
           </div>
-        </div>
-      </mat-card-content>
-      <mat-card-actions *ngIf="selectedProcess">
-        <span class="example-spacer"></span>
-        <button mat-flat-button color="primary" (click)="updateSelectedProcess()">Actualizar</button>
-        <button mat-button (click)="cancelEdit()">Cancelar</button>
-      </mat-card-actions>
-    </mat-card>
+        </mat-card-content>
+        <mat-card-actions *ngIf="selectedProcess">
+          <span class="example-spacer"></span>
+          <button mat-flat-button color="primary" (click)="updateSelectedProcess()">Actualizar</button>
+          <button mat-button (click)="cancelEdit()">Cancelar</button>
+        </mat-card-actions>
+      </mat-card>
+    </div>
   </div>
-</div>

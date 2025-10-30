@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -13,7 +14,7 @@ import { ProcessService } from '../../services/process-service';
 
 @Component({
   selector: 'app-processes',
-  imports: [CommonModule, MatCardModule, MatButtonModule, MatIconModule, MatProgressSpinnerModule, MatFormFieldModule, MatInputModule, FormsModule, MatSnackBarModule],
+  imports: [CommonModule, MatCardModule, MatButtonModule, MatIconModule, MatCheckboxModule, MatProgressSpinnerModule, MatFormFieldModule, MatInputModule, FormsModule, MatSnackBarModule],
   templateUrl: './processes.html',
   styleUrls: ['./processes.css']
 })
@@ -21,6 +22,8 @@ export class Processes implements OnInit {
   processes: Array<any> = [];
   loading = false;
   error: string | null = null;
+  // When true, show only processes that are executable (have Webhook tag)
+  showOnlyExecutable = false;
   private processService = inject(ProcessService);
   private snackBar = inject(MatSnackBar);
 
@@ -36,6 +39,17 @@ export class Processes implements OnInit {
 
   ngOnInit(): void {
     this.loadProcesses();
+  }
+
+  // Derived list applying the frontend-only "Ejecutable" filter when requested
+  get displayedProcesses() {
+    if (!this.processes) return [];
+    if (!this.showOnlyExecutable) return this.processes;
+    return this.processes.filter(p => !!p.canExecute);
+  }
+
+  toggleEjecutable() {
+    this.showOnlyExecutable = !this.showOnlyExecutable;
   }
 
   loadProcesses() {

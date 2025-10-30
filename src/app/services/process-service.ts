@@ -11,7 +11,9 @@ export class ProcessService {
   private http = inject(HttpClient);
 
   getProcesses() {
-    return this.http.get<any[]>(`${this.apiUrl}`);
+    // Request processes filtered server-side to Tool and Webhook tags, only active and not archived
+    // Example: GET /processes?tags=Tool,Webhook&active=true&archived=false
+    return this.http.get<any[]>(`${this.apiUrl}?tags=Tool,Webhook&active=true&archived=false`);
   }
 
   getProcessById(id: string) {
