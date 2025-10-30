@@ -60,10 +60,29 @@ export class ExecutionsService {
     }
 
     return this.http
-      .get<ApiResponse<ExecutionsListData>>(`${this.apiUrl}`, { params })
+      // Accept either the old wrapper shape (ApiResponse<{...}>) or the new direct shape ({ executions, nextCursor })
+      .get<any>(`${this.apiUrl}`, { params })
       .pipe(
-        // Map to the inner data object and provide a safe default when missing
-        map((res) => res?.data ?? { executions: [], nextCursor: null })
+        map((res) => {
+          // No response -> safe default
+          if (!res) return { executions: [], nextCursor: null } as ExecutionsListData;
+
+          // If backend still returns the wrapper { success, data: { executions, nextCursor } }
+          if (res.data !== undefined) {
+            return (res.data as ExecutionsListData) ?? { executions: [], nextCursor: null };
+          }
+
+          // If backend now returns the data object directly: { executions, nextCursor }
+          if (res.executions !== undefined) {
+            return {
+              executions: (res.executions as Execution[]) ?? [],
+              nextCursor: (res.nextCursor ?? null) as string | null
+            } as ExecutionsListData;
+          }
+
+          // Fallback safe default
+          return { executions: [], nextCursor: null } as ExecutionsListData;
+        })
       );
   }
 }
