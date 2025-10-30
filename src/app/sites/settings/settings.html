@@ -1,23 +1,190 @@
-<mat-card appearance="outlined" class="clickable" (click)="openUserAdmin()">
+<mat-card appearance="outlined">
   <mat-card-header>
     <mat-card-title>Administrar usuarios</mat-card-title>
     <mat-card-subtitle>Administrar usuarios, permisos y contraseñas</mat-card-subtitle>
   </mat-card-header>
-  <mat-card-content></mat-card-content>
+  <mat-card-content>
+    <!-- RBAC management UI: toggle between views, create button, and a table list -->
+
+    <div style="display:flex; flex-direction:column; gap:8px;">
+      <!-- View selector as a solo button + hyperlink, aligned with the Create button -->
+      <div style="display:flex; gap:12px; align-items:center; justify-content:space-between; width:100%;">
+        <div style="display:flex; gap:8px; align-items:center;">
+          <!-- Solo button that opens a small menu to choose the view -->
+          <button mat-icon-button [matMenuTriggerFor]="viewMenu" aria-label="Seleccionar vista"><mat-icon>arrow_drop_down</mat-icon></button>
+          <!-- Hyperlink showing the current view label -->
+          <a href="#" (click)="$event.preventDefault()" style="font-weight:600; text-decoration:underline; cursor:pointer; color:inherit">{{ getViewLabel(currentView) }}</a>
+        </div>
+
+        <div style="display:flex; gap:8px; align-items:center;">
+          <div style="font-size:13px; opacity:.8; white-space:nowrap">Vista: <strong>{{currentView}}</strong></div>
+          <button mat-stroked-button color="primary" style="font-size:13px; padding:6px 10px;" (click)="create()">Crear</button>
+        </div>
+      </div>
+
+      <!-- Table list: Column1 | Column2 | Actions -->
+      <div>
+        <table class="mat-elevation-z1" style="width:100%; border-collapse:collapse;">
+          <thead>
+            <tr style="text-align:left; background:rgba(0,0,0,0.02);">
+              <th style="padding:12px 8px;">Columna 1</th>
+              <th style="padding:12px 8px;">Columna 2</th>
+              <th style="padding:12px 8px; width:72px;">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Rows are generated from component `items` -->
+            <tr *ngFor="let it of items">
+              <td style="padding:12px 8px;">{{ it.col1 }}</td>
+              <td style="padding:12px 8px;">{{ it.col2 }}</td>
+              <td style="padding:8px;">
+                <!-- store the selected item before opening the menu -->
+                <button mat-icon-button (click)="selectedItem = it" [matMenuTriggerFor]="actionMenu"><mat-icon>more_vert</mat-icon></button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Shared actions menu for rows -->
+        <mat-menu #actionMenu="matMenu">
+          <button mat-menu-item (click)="edit(selectedItem)">
+            <mat-icon>edit</mat-icon>
+            <span>Editar</span>
+          </button>
+          <button mat-menu-item (click)="delete(selectedItem)">
+            <mat-icon>delete</mat-icon>
+            <span>Eliminar</span>
+          </button>
+          <button mat-menu-item (click)="view(selectedItem)">
+            <mat-icon>visibility</mat-icon>
+            <span>Ver</span>
+          </button>
+        </mat-menu>
+        
+        <!-- Menu for selecting view (users/roles/namespaces/processes) -->
+        <mat-menu #viewMenu="matMenu">
+          <button mat-menu-item (click)="changeView('users')">Usuarios</button>
+          <button mat-menu-item (click)="changeView('roles')">Roles</button>
+          <button mat-menu-item (click)="changeView('namespaces')">Namespaces</button>
+          <button mat-menu-item (click)="changeView('processes')">Procesos</button>
+        </mat-menu>
+      </div>
+    </div>
+  </mat-card-content>
 </mat-card>
 
-<mat-card appearance="outlined" class="clickable" (click)="openNotifications()">
+<mat-card appearance="outlined">
   <mat-card-header>
     <mat-card-title>Notificaciones</mat-card-title>
     <mat-card-subtitle>Configura alertas y notificaciones del sistema</mat-card-subtitle>
   </mat-card-header>
-  <mat-card-content></mat-card-content>
+  <mat-card-content>
+    <div style="margin:12px 0; padding:12px; border-radius:8px; border:1px solid rgba(0,0,0,0.06);">
+      <section style="display:grid; grid-template-columns: 1fr 2fr; gap:16px; margin-bottom:16px;">
+        <div>
+          <h3 style="margin:0 0 8px;">Preferencias</h3>
+
+          <div style="margin-bottom:8px;">Recibir por correo electrónico: <strong>Sí</strong></div>
+
+          <div style="margin-top:12px;">
+            <div style="width:100%;">
+              <label style="display:block; font-weight:600; margin-bottom:6px;">Severidad mínima</label>
+              <div>INFO • WARNING • SECURITY • SYSTEM</div>
+            </div>
+          </div>
+
+          <div style="margin-top:12px;">
+            <label style="display:block; font-weight:600; margin-bottom:6px;">Namespaces</label>
+            <div style="display:flex; gap:8px;"><mat-chip color="primary" selected>inteligencia_comercial</mat-chip><mat-chip color="primary" selected>marketing</mat-chip></div>
+          </div>
+
+          <div style="display:flex; gap:8px; margin-top:12px;">
+            <button mat-stroked-button color="primary">Guardar preferencias</button>
+            <button mat-button>Probar notificación</button>
+          </div>
+        </div>
+
+        <div>
+          <h3 style="margin:0 0 8px;">Recientes</h3>
+          <mat-divider></mat-divider>
+
+          <div style="display:flex; gap:8px; align-items:center; margin:12px 0;">
+            <button mat-stroked-button color="primary">Marcar todas como leídas</button>
+          </div>
+
+          <mat-list>
+            <mat-list-item>
+              <mat-icon matListItemIcon>notifications</mat-icon>
+              <div matListItemTitle style="display:flex; gap:8px; align-items:center;"><span style="font-weight:600">Evento crítico</span><mat-chip color="primary" selected>Nuevo</mat-chip></div>
+              <div matListItemLine style="opacity:.85">Se detectó un evento crítico en la cola X.</div>
+              <div matListItemLine style="font-size:12px; opacity:.6;">Hace 2 horas</div>
+            </mat-list-item>
+            <mat-list-item>
+              <mat-icon matListItemIcon>notifications</mat-icon>
+              <div matListItemTitle style="display:flex; gap:8px; align-items:center;"><span style="font-weight:400">Backup completado</span></div>
+              <div matListItemLine style="opacity:.85">El backup diario finalizó correctamente.</div>
+              <div matListItemLine style="font-size:12px; opacity:.6;">Ayer</div>
+            </mat-list-item>
+          </mat-list>
+        </div>
+      </section>
+    </div>
+  </mat-card-content>
 </mat-card>
-<mat-card appearance="outlined" class="clickable" (click)="openSecurity()">
+
+<mat-card appearance="outlined">
   <mat-card-header>
     <mat-card-title>Seguridad</mat-card-title>
     <mat-card-subtitle>Gestión de sesiones y alcance por namespace</mat-card-subtitle>
   </mat-card-header>
-  <mat-card-content></mat-card-content>
+  <mat-card-content>
+    <div style="margin:12px 0; padding:12px; border-radius:8px; border:1px solid rgba(0,0,0,0.06);">
+      <h2 style="margin:0 0 12px; display:flex; align-items:center; gap:8px;"><mat-icon>manage_accounts</mat-icon> Sesiones activas</h2>
+
+      <div style="margin-bottom:12px; display:flex; justify-content:flex-end;"><button mat-stroked-button color="warn">Cerrar otras sesiones</button></div>
+
+      <table class="mat-elevation-z1" style="width:100%">
+        <thead>
+          <tr>
+            <th>Dispositivo</th>
+            <th>IP</th>
+            <th>Ubicación</th>
+            <th>Última actividad</th>
+            <th>Actual</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <div style="display:flex; align-items:center; gap:8px;"><mat-icon>desktop_windows</mat-icon><div><div style="font-weight:600">Laptop</div><div style="font-size:12px; opacity:.7">Mozilla/5.0</div></div></div>
+            </td>
+            <td>192.0.2.1</td>
+            <td>—</td>
+            <td>Hace 10 min</td>
+            <td><mat-icon color="primary">check_circle</mat-icon></td>
+            <td><button mat-button color="warn">Cerrar</button></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <mat-divider style="margin:12px 0;"></mat-divider>
+
+      <section>
+        <h3 style="margin:16px 0 8px; display:flex; align-items:center; gap:8px;"><mat-icon>domain</mat-icon> Alcance por namespace</h3>
+
+        <div style="display:grid; gap:12px;">
+          <div class="scope-card">
+            <div class="scope-title">
+              <div class="ns-badge">inteligencia_comercial</div>
+              <div style="flex:1 1 auto"></div>
+              <div style="font-size:12px; opacity:.8">Roles: admin, viewer</div>
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;"><mat-chip color="primary" selected>read</mat-chip><mat-chip color="primary" selected>write</mat-chip></div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </mat-card-content>
 </mat-card>
 
