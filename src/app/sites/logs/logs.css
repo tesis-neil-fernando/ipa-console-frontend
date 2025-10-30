@@ -1,0 +1,30 @@
+.logs-container {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	box-sizing: border-box;
+}
+
+.logs-container .logs-controls {
+	flex: 0 0 auto;
+}
+
+.logs-container .table-scroll {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow: auto;
+	border: 1px solid rgba(0,0,0,0.08);
+	border-radius: 4px;
+}
+
+.logs-container .mat-header-row {
+	position: sticky;
+	top: 0;
+	z-index: 2;
+	background: white;
+}
+
+.logs-container table {
+	width: 100%;
+}
+

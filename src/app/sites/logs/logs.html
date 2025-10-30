@@ -1,44 +1,60 @@
 <div class="logs-container">
-    <table mat-table [dataSource]="logs">
+        <div class="logs-controls" style="margin-bottom: 12px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <button mat-raised-button color="primary" (click)="refresh()" [disabled]="loading">Actualizar</button>
+            <button mat-stroked-button (click)="loadPage(currentPage - 1)" [disabled]="currentPage <= 1 || loading">Anterior</button>
+
+            <ng-container *ngFor="let p of pageNumbers()">
+                <button mat-button [disabled]="p === currentPage || loading" (click)="loadPage(p)">{{ p }}</button>
+            </ng-container>
+
+            <button mat-stroked-button (click)="loadPage(currentPage + 1)" [disabled]="!cursors[currentPage + 1] || loading">Siguiente</button>
+
+            <span *ngIf="loading">Cargando...</span>
+            <span *ngIf="error" style="color:var(--warn-color, #c00);">{{ error }}</span>
+        </div>
+
+        <div class="table-scroll">
+            <table mat-table [dataSource]="logsByPage[currentPage] || []">
         <!-- Time Column -->
         <ng-container matColumnDef="time">
             <th mat-header-cell *matHeaderCellDef> Tiempo </th>
-            <td mat-cell *matCellDef="let log"> {{ log.time }} </td>
+            <td mat-cell *matCellDef="let log"> {{ log.startedAt | date:'yyyy-MM-dd HH:mm:ss' }} </td>
         </ng-container>
 
         <!-- Process Column -->
         <ng-container matColumnDef="process">
             <th mat-header-cell *matHeaderCellDef> Proceso </th>
-            <td mat-cell *matCellDef="let log"> {{ log.process }} </td>
+            <td mat-cell *matCellDef="let log"> {{ log.processName }} </td>
         </ng-container>
 
         <!-- Trigger Column -->
         <ng-container matColumnDef="trigger">
             <th mat-header-cell *matHeaderCellDef> Disparador </th>
-            <td mat-cell *matCellDef="let log"> {{ log.trigger }} </td>
+            <td mat-cell *matCellDef="let log"> {{ log.triggerStr }} </td>
         </ng-container>
 
         <!-- Status Column -->
         <ng-container matColumnDef="status">
             <th mat-header-cell *matHeaderCellDef> Estado </th>
-            <td mat-cell *matCellDef="let log"> {{ log.status }} </td>
+            <td mat-cell *matCellDef="let log"> {{ log.status === 'success' ? 'Ejecución exitosa' : (log.status || 'Desconocido') }} </td>
         </ng-container>
 
         <!-- Duration Column -->
         <ng-container matColumnDef="duration">
             <th mat-header-cell *matHeaderCellDef> Duración </th>
-            <td mat-cell *matCellDef="let log"> {{ log.duration }} </td>
+            <td mat-cell *matCellDef="let log"> {{ log.durationStr || '—' }} </td>
         </ng-container>
 
         <!-- Actions Column -->
         <ng-container matColumnDef="actions">
             <th mat-header-cell *matHeaderCellDef> Acciones </th>
             <td mat-cell *matCellDef="let log">
-                <button mat-button color="primary">Ver Detalles</button>
+                <button mat-button color="primary" (click)="viewDetails(log)">Ver Detalles</button>
             </td>
         </ng-container>
 
-        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-    </table>
+                <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+                <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+            </table>
+        </div>
 </div>
