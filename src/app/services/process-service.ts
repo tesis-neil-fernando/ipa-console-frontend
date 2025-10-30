@@ -13,7 +13,7 @@ export class ProcessService {
   getProcesses() {
     // Request processes filtered server-side to Tool and Webhook tags, only active and not archived
     // Example: GET /processes?tags=Tool,Webhook&active=true&archived=false
-    return this.http.get<any[]>(`${this.apiUrl}?tags=Tool,Webhook&active=true&archived=false`);
+    return this.http.get<any[]>(`${this.apiUrl}?tags=tool,Webhook&active=true&archived=false`);
   }
 
   getProcessById(id: string) {
