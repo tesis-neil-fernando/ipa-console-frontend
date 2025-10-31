@@ -34,10 +34,25 @@
   /* Forzar el mismo tamaño que los trailing icons de los chips (≈18px) */
   width: 16px;
   height: 16px;
-  font-size: 16x;
+  font-size: 16px;
   line-height: 16px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   vertical-align: middle;
+}
+
+/* Namespace add-chip mirrors add-role-chip */
+.add-namespace-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0 0;
+}
+
+.add-namespace-chip.editing {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }

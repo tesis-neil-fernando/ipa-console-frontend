@@ -18,9 +18,8 @@
 							<mat-header-cell *matHeaderCellDef> Roles </mat-header-cell>
 							<mat-cell *matCellDef="let it">
 								<mat-chip-set aria-label="Roles del usuario">
-									<mat-chip *ngFor="let r of it.roles"
-										(removed)="confirmRemoveRoleFromUser(it, r.id)">{{
-										r.name }}
+									<mat-chip *ngFor="let r of it.roles; trackBy: trackByRole"
+										(removed)="confirmRemoveRoleFromUser(it, r.id)">{{ r.name }}
 										<mat-icon matChipRemove>remove</mat-icon>
 									</mat-chip>
 									<ng-container *ngIf="!isEditing(it); else editRolesTpl">
@@ -30,19 +29,18 @@
 									</ng-container>
 									<ng-template #editRolesTpl>
 										<mat-chip color="primary" class="add-role-chip editing" selectable="false">
-											<input #roleInput class="chip-input" type="text" [ngModel]="roleSearchText"
-												(ngModelChange)="roleSearchText = $event" [matAutocomplete]="roleAuto"
-												placeholder="Agregar rol" />
+											<input #roleInput class="chip-input" type="text" [(ngModel)]="roleSearchTextByUser[it.id]"
+												[matAutocomplete]="roleAuto" placeholder="Agregar rol" />
 											<mat-icon matChipRemove aria-label="Hecho" title="Hecho" type="button"
 												(click)="finishEdit()">close</mat-icon>
 										</mat-chip>
 									</ng-template>
-									<mat-autocomplete #roleAuto="matAutocomplete"
+									<mat-autocomplete #roleAuto="matAutocomplete" [displayWith]="displayRole"
 										(optionSelected)="onRoleSelected(it, $event.option.value)">
-										<mat-option *ngFor="let r of filteredRoles(it, roleSearchText)" [value]="r.id">
+										<mat-option *ngFor="let r of filteredRoles(it, roleSearchTextByUser[it.id])" [value]="r">
 											{{ r.name }}
 										</mat-option>
-										<mat-option *ngIf="filteredRoles(it, roleSearchText).length === 0" disabled>
+										<mat-option *ngIf="filteredRoles(it, roleSearchTextByUser[it.id]).length === 0" disabled>
 											sin roles
 										</mat-option>
 									</mat-autocomplete>
@@ -63,14 +61,52 @@
 			</mat-tab>
 			<mat-tab label="Roles">
 				<div>
-					<mat-table [dataSource]="roles" class="mat-elevation-z1">
+					<mat-table [dataSource]="rolesList" class="mat-elevation-z1">
 						<ng-container matColumnDef="name">
 							<mat-header-cell *matHeaderCellDef> Rol </mat-header-cell>
 							<mat-cell *matCellDef="let it"> {{ it.name }} </mat-cell>
 						</ng-container>
 						<ng-container matColumnDef="permissions">
 							<mat-header-cell *matHeaderCellDef> Permisos </mat-header-cell>
-							<mat-cell *matCellDef="let it"> {{ it.permissions }} </mat-cell>
+							<mat-cell *matCellDef="let it">
+								<mat-chip-set aria-label="Permisos del rol">
+									<!-- For each permission object, render one chip per namespace if present -->
+									<ng-container *ngFor="let p of (it.permissions || [])">
+										<ng-container *ngIf="p.namespaces && p.namespaces.length; else permNoNsTpl">
+											<mat-chip *ngFor="let ns of p.namespaces" (removed)="confirmRemovePermissionFromRole(it, p.id)">
+												{{ ns.name }}:{{ p.type }}
+												<mat-icon matChipRemove>remove</mat-icon>
+											</mat-chip>
+										</ng-container>
+										<ng-template #permNoNsTpl>
+											<mat-chip (removed)="confirmRemovePermissionFromRole(it, p.id)">
+												{{ p.type }}
+												<mat-icon matChipRemove>remove</mat-icon>
+											</mat-chip>
+										</ng-template>
+									</ng-container>
+
+									<!-- Add-permission chip / inline input -->
+									<ng-container *ngIf="editingRoleId !== it.id; else editRolePermTpl">
+										<mat-chip color="primary" (click)="startEditRole(it)" class="add-role-chip" selectable="false">+</mat-chip>
+									</ng-container>
+									<ng-template #editRolePermTpl>
+										<mat-chip color="primary" class="add-role-chip editing" selectable="false">
+											<input #permInput #permAutoTrigger="matAutocompleteTrigger" class="chip-input" type="text" [(ngModel)]="permissionSearchTextByRole[it.id]" [matAutocomplete]="permAuto" placeholder="Agregar permiso (namespace:tipo)" />
+											<mat-icon matChipRemove aria-label="Hecho" title="Hecho" type="button" (click)="finishEditRole()">close</mat-icon>
+										</mat-chip>
+									</ng-template>
+
+									<mat-autocomplete #permAuto="matAutocomplete" [displayWith]="displayPermission" (optionSelected)="onPermissionSelected(it, $event.option.value)">
+										<mat-option *ngFor="let o of filteredPermissions(it, permissionSearchTextByRole[it.id])" [value]="o">
+											{{ o.namespaceName }}:{{ o.type }}
+										</mat-option>
+										<mat-option *ngIf="filteredPermissions(it, permissionSearchTextByRole[it.id]).length === 0" disabled>
+											sin permisos
+										</mat-option>
+									</mat-autocomplete>
+								</mat-chip-set>
+							</mat-cell>
 						</ng-container>
 						<ng-container matColumnDef="actions">
 							<mat-header-cell *matHeaderCellDef> Acciones </mat-header-cell>
@@ -93,14 +129,21 @@
 			</mat-tab>
 			<mat-tab label="Namespaces">
 				<div>
-					<mat-table [dataSource]="namespaces" class="mat-elevation-z1">
+					<mat-table [dataSource]="namespacesList" class="mat-elevation-z1">
 						<ng-container matColumnDef="name">
 							<mat-header-cell *matHeaderCellDef> Namespace </mat-header-cell>
 							<mat-cell *matCellDef="let it"> {{ it.name }} </mat-cell>
 						</ng-container>
 						<ng-container matColumnDef="processes">
 							<mat-header-cell *matHeaderCellDef> Procesos </mat-header-cell>
-							<mat-cell *matCellDef="let it"> {{ it.processes }} </mat-cell>
+							<mat-cell *matCellDef="let it">
+								<!-- Read-only stacked chips: show processes assigned to this namespace. No remove/add actions here. -->
+								<mat-chip-set class="stacked-chip-set" aria-label="Procesos del namespace">
+									<mat-chip *ngFor="let p of (it.processes || []); trackBy: trackByProcess" class="stacked-chip" selectable="false">
+										{{ p.name }}
+									</mat-chip>
+								</mat-chip-set>
+							</mat-cell>
 						</ng-container>
 						<ng-container matColumnDef="actions">
 							<mat-header-cell *matHeaderCellDef> Acciones </mat-header-cell>
@@ -130,7 +173,31 @@
 						</ng-container>
 						<ng-container matColumnDef="namespace">
 							<mat-header-cell *matHeaderCellDef> Namespace </mat-header-cell>
-							<mat-cell *matCellDef="let it"> {{ it.namespace }} </mat-cell>
+							<mat-cell *matCellDef="let it">
+								<mat-chip-set aria-label="Namespace del proceso">
+									<mat-chip *ngIf="it.namespaceId && it.namespaceName; else noNamespaceTpl" (removed)="confirmRemoveNamespaceFromProcess(it, it.namespaceId)">
+										{{ it.namespaceName }}
+										<mat-icon matChipRemove>remove</mat-icon>
+									</mat-chip>
+									<ng-template #noNamespaceTpl>
+										<mat-chip color="primary" (click)="startEditProcess(it)" class="add-namespace-chip" selectable="false">+</mat-chip>
+									</ng-template>
+									<ng-container *ngIf="editingProcessId === it.id && it.namespaceId == null">
+										<mat-chip color="primary" class="add-namespace-chip editing" selectable="false">
+											<input #namespaceInput #namespaceAutoTrigger="matAutocompleteTrigger" class="chip-input" type="text" [(ngModel)]="namespaceSearchTextByProcess[it.id]" [matAutocomplete]="namespaceAuto" placeholder="Asignar namespace" />
+											<mat-icon matChipRemove aria-label="Hecho" title="Hecho" type="button" (click)="finishEditProcess()">close</mat-icon>
+										</mat-chip>
+									</ng-container>
+									<mat-autocomplete #namespaceAuto="matAutocomplete" (optionSelected)="onNamespaceSelected(it, $event.option.value)" [displayWith]="displayNamespace">
+										<mat-option *ngFor="let n of filteredNamespaces(it, namespaceSearchTextByProcess[it.id])" [value]="n">
+											{{ n.name }}
+										</mat-option>
+										<mat-option *ngIf="filteredNamespaces(it, namespaceSearchTextByProcess[it.id]).length === 0" disabled>
+											sin namespaces
+										</mat-option>
+									</mat-autocomplete>
+								</mat-chip-set>
+							</mat-cell>
 						</ng-container>
 						<ng-container matColumnDef="actions">
 							<mat-header-cell *matHeaderCellDef> Acciones </mat-header-cell>

@@ -108,6 +108,11 @@ export class RbacService {
     return this.http.get<ProcessRbacDto[]>(`${this.apiUrl}/processes`);
   }
 
+  // Permissions
+  listPermissions(): Observable<PermissionRbacDto[]> {
+    return this.http.get<PermissionRbacDto[]>(`${this.apiUrl}/permissions`);
+  }
+
   // User <-> Role
   assignRoleToUser(userId: number, roleId: number): Observable<void> {
     return this.http.post<void>(`${this.apiUrl}/users/${userId}/roles/${roleId}`, {} as any);
