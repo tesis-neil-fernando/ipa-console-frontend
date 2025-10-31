@@ -1,7 +1,6 @@
 import { Component, OnInit, inject, ViewChildren, ElementRef, QueryList, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { MatCardModule } from '@angular/material/card';
 import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -23,7 +22,6 @@ import { RbacService, RoleRbacDto, UserRbacDto, RoleRefDto, NamespaceRbacDto, Pr
   standalone: true,
   imports: [
     CommonModule,
-    MatCardModule,
     MatListModule,
     MatIconModule,
     MatButtonModule,
