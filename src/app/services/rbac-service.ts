@@ -3,12 +3,6 @@ import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 import { Observable } from 'rxjs';
 
-// Minimal DTOs matching backend RBAC controller/entities (subset)
-export interface PermissionRbacDto {
-  id: number;
-  type: string;
-}
-
 export interface RoleRbacDto {
   id: number;
   name: string;

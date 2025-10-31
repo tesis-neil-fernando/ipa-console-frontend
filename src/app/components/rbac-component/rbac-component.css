@@ -1,0 +1,43 @@
+
+.spacer {
+  flex: 1 1 auto;
+}
+
+/* Input dentro del chip de agregar rol */
+.add-role-chip.editing {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chip-input {
+  border: none;
+  outline: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  width: 160px;
+  min-width: 100px;
+}
+
+/* Estilo del chip de "Agregar" para que el ícono coincida con los íconos de trailing (matChipRemove) */
+.add-role-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer; /* que se sienta clickeable */
+  /* padding similar a chips con ícono trailing, manteniendo el ancho visual compacto */
+  padding: 0 0;
+}
+
+.add-role-chip mat-icon {
+  /* Forzar el mismo tamaño que los trailing icons de los chips (≈18px) */
+  width: 16px;
+  height: 16px;
+  font-size: 16x;
+  line-height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+}
