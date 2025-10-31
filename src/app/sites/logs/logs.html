@@ -1,20 +1,42 @@
 <div class="logs-container">
-        <div class="logs-controls" style="margin-bottom: 12px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-            <button mat-raised-button color="primary" (click)="refresh()" [disabled]="loading">Actualizar</button>
-            <button mat-stroked-button (click)="loadPage(currentPage - 1)" [disabled]="currentPage <= 1 || loading">Anterior</button>
+                <div class="logs-controls" style="margin-bottom: 12px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                        <button mat-raised-button color="primary" (click)="refresh()" [disabled]="loading">Actualizar</button>
+                        <button mat-stroked-button (click)="loadPage(currentPage - 1)" [disabled]="currentPage <= 1 || loading">Anterior</button>
 
-            <ng-container *ngFor="let p of pageNumbers()">
-                <button mat-button [disabled]="p === currentPage || loading" (click)="loadPage(p)">{{ p }}</button>
-            </ng-container>
+                        <ng-container *ngFor="let p of pageNumbers()">
+                                <button mat-button [disabled]="p === currentPage || loading" (click)="loadPage(p)">{{ p }}</button>
+                        </ng-container>
 
-            <button mat-stroked-button (click)="loadPage(currentPage + 1)" [disabled]="!cursors[currentPage + 1] || loading">Siguiente</button>
+                        <button mat-stroked-button (click)="loadPage(currentPage + 1)" [disabled]="!cursors[currentPage + 1] || loading">Siguiente</button>
 
-            <span *ngIf="loading">Cargando...</span>
-            <span *ngIf="error" style="color:var(--warn-color, #c00);">{{ error }}</span>
-        </div>
+                        <span *ngIf="loading">Cargando...</span>
+                        <span *ngIf="error" style="color:var(--warn-color, #c00);">{{ error }}</span>
+
+                        <span style="flex:1 1 auto"></span>
+
+                        <!-- Filters -->
+                        <mat-form-field appearance="outline" style="width:220px;">
+                            <mat-label>Estado</mat-label>
+                            <mat-select [(value)]="filters.status" (selectionChange)="onFilterChange()">
+                                <mat-option value="">Todos</mat-option>
+                                <mat-option value="success">Ejecución exitosa</mat-option>
+                                <mat-option value="failed">Fallido</mat-option>
+                                <mat-option value="running">En ejecución</mat-option>
+                            </mat-select>
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline" style="width:220px;">
+                            <mat-label>Buscar</mat-label>
+                            <input matInput placeholder="Proceso, id..." [(ngModel)]="filters.q" (input)="onFilterChange()">
+                        </mat-form-field>
+
+                                    <button mat-icon-button (click)="exportVisibleCsv()" [disabled]="loading || !(logsByPage[currentPage] && logsByPage[currentPage].length)" aria-label="Exportar CSV">
+                            <mat-icon>download</mat-icon>
+                        </button>
+                </div>
 
         <div class="table-scroll">
-            <table mat-table [dataSource]="logsByPage[currentPage] || []">
+            <table mat-table [dataSource]="logsByPage[currentPage] || []" [trackBy]="trackById">
         <!-- Time Column -->
         <ng-container matColumnDef="time">
             <th mat-header-cell *matHeaderCellDef> Tiempo </th>
@@ -46,10 +68,10 @@
         </ng-container>
 
         <!-- Actions Column -->
-        <ng-container matColumnDef="actions">
+                        <ng-container matColumnDef="actions">
             <th mat-header-cell *matHeaderCellDef> Acciones </th>
             <td mat-cell *matCellDef="let log">
-                <button mat-button color="primary" (click)="viewDetails(log)">Ver Detalles</button>
+                                <button mat-button color="primary" (click)="openDetails(log)">Ver Detalles</button>
             </td>
         </ng-container>
 
@@ -57,4 +79,15 @@
                 <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
             </table>
         </div>
+        
+                <!-- Details dialog template -->
+                <ng-template #detailsDialog let-data="data">
+                    <div style="padding:16px; max-height:70vh; overflow:auto;">
+                        <h2>Detalles de ejecución</h2>
+                        <pre style="white-space:pre-wrap;">{{ data | json }}</pre>
+                        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:12px;">
+                            <button mat-stroked-button (click)="dialog.closeAll()">Cerrar</button>
+                        </div>
+                    </div>
+                </ng-template>
 </div>

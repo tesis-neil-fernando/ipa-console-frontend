@@ -28,3 +28,11 @@
 	width: 100%;
 }
 
+.logs-controls mat-form-field {
+	margin-left: 8px;
+}
+
+.logs-controls mat-icon {
+	vertical-align: middle;
+}
+

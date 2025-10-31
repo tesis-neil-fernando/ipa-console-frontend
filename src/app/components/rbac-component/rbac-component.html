@@ -3,47 +3,52 @@
 		<mat-card-title>Administrar usuarios</mat-card-title>
 		<mat-card-subtitle>Administrar usuarios, permisos y contraseñas</mat-card-subtitle>
 	</mat-card-header>
+
+	<!-- moved view selector: use mat-tabs and keep them visible always -->
+	<mat-card-actions>
+		<mat-tab-group [selectedIndex]="getViewIndex()" (selectedIndexChange)="onTabChange($event)">
+			<mat-tab label="Usuarios"></mat-tab>
+			<mat-tab label="Roles"></mat-tab>
+			<mat-tab label="Namespaces"></mat-tab>
+			<mat-tab label="Procesos"></mat-tab>
+		</mat-tab-group>
+	</mat-card-actions>
+
 	<mat-card-content>
-		<!-- RBAC management UI: toggle between views, create button, and a table list -->
+		<div>
+			<!-- Show table when no item selected -->
+			<div *ngIf="!selectedItem">
+				<!-- mat-table replacing plain table -->
+				<mat-table [dataSource]="dataSource" class="mat-elevation-z1">
 
-		<div style="display:flex; flex-direction:column; gap:8px;">
-			<!-- View selector as a solo button + hyperlink, aligned with the Create button -->
-			<div style="display:flex; gap:12px; align-items:center; justify-content:space-between; width:100%;">
-				<div style="display:flex; gap:8px; align-items:center;">
-					<!-- Solo button that opens a small menu to choose the view -->
-					<button mat-icon-button [matMenuTriggerFor]="viewMenu" aria-label="Seleccionar vista"><mat-icon>arrow_drop_down</mat-icon></button>
-					<!-- Hyperlink showing the current view label -->
-					<a href="#" (click)="$event.preventDefault()" style="font-weight:600; text-decoration:underline; cursor:pointer; color:inherit">{{ getViewLabel(currentView) }}</a>
-				</div>
+					<!-- Column 1 -->
+					<ng-container matColumnDef="col1">
+						<mat-header-cell *matHeaderCellDef> {{ getCol1Label() }} </mat-header-cell>
+						<mat-cell *matCellDef="let it">
+							<a href="#" (click)="$event.preventDefault(); view(it)">{{ it.col1 }}</a>
+						</mat-cell>
+					</ng-container>
 
-				<div style="display:flex; gap:8px; align-items:center;">
-					<div style="font-size:13px; opacity:.8; white-space:nowrap">Vista: <strong>{{currentView}}</strong></div>
-					<button mat-stroked-button color="primary" style="font-size:13px; padding:6px 10px;" (click)="create()">Crear</button>
-				</div>
-			</div>
+					<!-- Column 2 -->
+					<ng-container matColumnDef="col2">
+						<mat-header-cell *matHeaderCellDef> {{ getCol2Label() }} </mat-header-cell>
+						<mat-cell *matCellDef="let it"> {{ it.col2 }} </mat-cell>
+					</ng-container>
 
-			<!-- Table list: Column1 | Column2 | Actions -->
-			<div>
-				<table class="mat-elevation-z1" style="width:100%; border-collapse:collapse;">
-					<thead>
-						<tr style="text-align:left; background:rgba(0,0,0,0.02);">
-							<th style="padding:12px 8px;">Columna 1</th>
-							<th style="padding:12px 8px;">Columna 2</th>
-							<th style="padding:12px 8px; width:72px;">Acciones</th>
-						</tr>
-					</thead>
-					<tbody>
-						<!-- Rows are generated from component `items` -->
-						<tr *ngFor="let it of items">
-							<td style="padding:12px 8px;">{{ it.col1 }}</td>
-							<td style="padding:12px 8px;">{{ it.col2 }}</td>
-							<td style="padding:8px;">
-								<!-- store the selected item before opening the menu -->
-								<button mat-icon-button (click)="selectedItem = it" [matMenuTriggerFor]="actionMenu"><mat-icon>more_vert</mat-icon></button>
-							</td>
-						</tr>
-					</tbody>
-				</table>
+					<!-- Actions column -->
+					<ng-container matColumnDef="actions">
+						<mat-header-cell *matHeaderCellDef> </mat-header-cell>
+						<mat-cell *matCellDef="let it">
+							<button mat-icon-button (click)="selectedItem = it" [matMenuTriggerFor]="actionMenu"
+								aria-label="Actions">
+								<mat-icon>more_vert</mat-icon>
+							</button>
+						</mat-cell>
+					</ng-container>
+
+					<mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
+					<mat-row *matRowDef="let row; columns: displayedColumns;"></mat-row>
+				</mat-table>
 
 				<!-- Shared actions menu for rows -->
 				<mat-menu #actionMenu="matMenu">
@@ -60,15 +65,165 @@
 						<span>Ver</span>
 					</button>
 				</mat-menu>
-        
-				<!-- Menu for selecting view (users/roles/namespaces/processes) -->
-				<mat-menu #viewMenu="matMenu">
-					<button mat-menu-item (click)="changeView('users')">Usuarios</button>
-					<button mat-menu-item (click)="changeView('roles')">Roles</button>
-					<button mat-menu-item (click)="changeView('namespaces')">Namespaces</button>
-					<button mat-menu-item (click)="changeView('processes')">Procesos</button>
-				</mat-menu>
+			</div>
+
+			<!-- Detail view -->
+			<div *ngIf="selectedItem && selectedDetails">
+				<!-- Header for the detail view -->
+				<div class="rbac-detail-header">
+					<h2>{{ getViewLabel(currentView) }}: {{ selectedDetails.name || selectedDetails.username }}</h2>
+					<div class="rbac-actions">
+						<button mat-icon-button aria-label="Back" (click)="backToList()" title="Volver"><mat-icon>arrow_back</mat-icon></button>
+						<button mat-stroked-button color="primary" (click)="edit(selectedDetails)">Editar</button>
+						<button mat-icon-button color="warn" (click)="delete(selectedDetails)" title="Eliminar"><mat-icon>delete</mat-icon></button>
+					</div>
+				</div>
+
+				<!-- detail rendered with a mat-table -->
+				<mat-table [dataSource]="detailRows">
+
+					<!-- Field column -->
+					<ng-container matColumnDef="field">
+						<mat-header-cell *matHeaderCellDef> Campo </mat-header-cell>
+						<mat-cell *matCellDef="let row"> {{ row.field }} </mat-cell>
+					</ng-container>
+
+					<!-- Value column with branching templates -->
+					<ng-container matColumnDef="value">
+						<mat-header-cell *matHeaderCellDef> Valor </mat-header-cell>
+						<mat-cell *matCellDef="let row">
+							<!-- username / name / simple text -->
+							<div *ngIf="row.key === 'username' || row.key === 'name' || row.key === 'description'">
+								{{ row.value }}
+							</div>
+
+							<!-- namespace object -->
+							<div *ngIf="row.key === 'namespace'">
+								{{ row.value?.name || '-' }}
+							</div>
+
+							<!-- roles list with remove buttons and assign control -->
+							<div *ngIf="row.key === 'roles'">
+								<div class="chip-list" aria-label="Roles">
+									<span *ngFor="let r of (row.value || [])" class="rbac-chip">
+										{{ r.name }}
+										<button mat-icon-button class="chip-remove" (click)="removeRoleFromUser(r.id)" aria-label="remove role">
+											<mat-icon>cancel</mat-icon>
+										</button>
+									</span>
+								</div>
+								<div class="assign-row">
+									<mat-form-field appearance="fill" style="width:220px">
+										<mat-select placeholder="Asignar rol" #roleSelectDet>
+											<mat-option *ngFor="let r of roles" [value]="r.id">{{ r.name }}</mat-option>
+										</mat-select>
+									</mat-form-field>
+									<button mat-stroked-button color="primary" (click)="assignRoleToUser(roleSelectDet.value)">Asignar</button>
+								</div>
+							</div>
+
+							<!-- permissions list with remove and assign controls -->
+							<div *ngIf="row.key === 'permissions'">
+								<div class="chip-list">
+									<span *ngFor="let p of (row.value || [])" class="rbac-chip">
+										{{ p.type }}
+										<button mat-icon-button class="chip-remove" (click)="removePermissionFromRole(p.id)" aria-label="remove permission">
+											<mat-icon>cancel</mat-icon>
+										</button>
+									</span>
+								</div>
+								<div class="assign-row">
+									<mat-form-field appearance="fill" style="width:220px">
+										<mat-select [(value)]="selectedNamespaceForPermissions" (selectionChange)="loadNamespacePermissions($event.value)">
+											<mat-option *ngFor="let ns of namespaces" [value]="ns.id">{{ ns.name }}</mat-option>
+										</mat-select>
+									</mat-form-field>
+									<mat-form-field appearance="fill" style="width:220px">
+										<mat-select #permSelectDet>
+											<mat-option *ngFor="let p of namespacePermissionOptions" [value]="p.id">{{ p.type }}</mat-option>
+										</mat-select>
+									</mat-form-field>
+									<button mat-stroked-button color="primary" (click)="assignPermissionToRole(permSelectDet.value)">Asignar permiso</button>
+								</div>
+							</div>
+
+							<!-- processes list with remove and assign controls -->
+							<div *ngIf="row.key === 'processes'">
+								<div class="process-list">
+									<div *ngFor="let p of (row.value || [])" class="process-item">
+										<div>{{ p.name }}</div>
+										<button mat-icon-button color="warn" (click)="removeProcessFromNamespace(p.id)"><mat-icon>remove_circle</mat-icon></button>
+									</div>
+								</div>
+								<div class="assign-row">
+									<mat-form-field appearance="fill" style="width:240px">
+										<mat-select #procSelectDet>
+											<mat-option *ngFor="let p of processes" [value]="p.id">{{ p.name }}</mat-option>
+										</mat-select>
+									</mat-form-field>
+									<button mat-stroked-button color="primary" (click)="assignProcessToNamespace(procSelectDet.value)">Asignar</button>
+								</div>
+							</div>
+						</mat-cell>
+					</ng-container>
+
+					<mat-header-row *matHeaderRowDef="detailDisplayedColumns"></mat-header-row>
+					<mat-row *matRowDef="let row; columns: detailDisplayedColumns;"></mat-row>
+				</mat-table>
 			</div>
 		</div>
+
+		<!-- Menu for selecting view (users/roles/namespaces/processes) declared at template root so triggers can reference it -->
+		<mat-menu #viewMenu="matMenu">
+			<button mat-menu-item (click)="changeView('users')">Usuarios</button>
+			<button mat-menu-item (click)="changeView('roles')">Roles</button>
+			<button mat-menu-item (click)="changeView('namespaces')">Namespaces</button>
+			<button mat-menu-item (click)="changeView('processes')">Procesos</button>
+		</mat-menu>
 	</mat-card-content>
+
+	<!-- Edit dialog template (opened via MatDialog) -->
+	<ng-template #editDialog>
+		<h2>Editar {{ getViewLabel(currentView) }}</h2>
+		<div>
+			<!-- Users -->
+			<div *ngIf="currentView === 'users'">
+				<mat-form-field appearance="fill">
+					<mat-label>Username</mat-label>
+					<input matInput [(ngModel)]="editModel.username" />
+				</mat-form-field>
+				<div>
+					<label><input type="checkbox" [(ngModel)]="editModel.enabled" /> Habilitado</label>
+				</div>
+			</div>
+			<!-- Roles / Namespaces -->
+			<div *ngIf="currentView === 'roles' || currentView === 'namespaces'">
+				<mat-form-field appearance="fill">
+					<mat-label>Nombre</mat-label>
+					<input matInput [(ngModel)]="editModel.name" />
+				</mat-form-field>
+			</div>
+			<!-- Processes -->
+			<div *ngIf="currentView === 'processes'">
+				<mat-form-field appearance="fill">
+					<mat-label>Nombre</mat-label>
+					<input matInput [(ngModel)]="editModel.name" />
+				</mat-form-field>
+				<mat-form-field appearance="fill">
+					<mat-label>Descripción</mat-label>
+					<input matInput [(ngModel)]="editModel.description" />
+				</mat-form-field>
+				<mat-form-field appearance="fill">
+					<mat-label>Namespace</mat-label>
+					<mat-select [(ngModel)]="editModel.namespaceId">
+						<mat-option *ngFor="let ns of namespaces" [value]="ns.id">{{ ns.name }}</mat-option>
+					</mat-select>
+				</mat-form-field>
+			</div>
+		</div>
+		<div>
+			<button mat-stroked-button (click)="dialog.closeAll()">Cancelar</button>
+			<button mat-flat-button color="primary" (click)="saveEdit()">Guardar</button>
+		</div>
+	</ng-template>
 </mat-card>

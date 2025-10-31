@@ -67,12 +67,57 @@ export class ExecutionsService {
           // No response -> safe default
           if (!res) return { executions: [], nextCursor: null } as ExecutionsListData;
 
-          // If backend still returns the wrapper { success, data: { executions, nextCursor } }
+          // Helper to extract executions & nextCursor from different shapes
+          const extractFromObj = (obj: any): ExecutionsListData | null => {
+            if (!obj) return null;
+
+            // New controller: PageResponse has `items: Execution[]` and `nextCursor`
+            if (Array.isArray(obj.items)) {
+              return {
+                executions: (obj.items as Execution[]) ?? [],
+                nextCursor: (obj.nextCursor ?? null) as string | null
+              } as ExecutionsListData;
+            }
+
+            // Older direct shape compatibility: { executions: Execution[] }
+            if (Array.isArray(obj.executions)) {
+              return {
+                executions: (obj.executions as Execution[]) ?? [],
+                nextCursor: (obj.nextCursor ?? null) as string | null
+              } as ExecutionsListData;
+            }
+
+            return null;
+          };
+
+          // If wrapped: ApiResponse { success, data: { items | executions, nextCursor } }
           if (res.data !== undefined) {
-            return (res.data as ExecutionsListData) ?? { executions: [], nextCursor: null };
+            // If data is a page-like object
+            const fromData = extractFromObj(res.data);
+            if (fromData) return fromData;
+
+            // If data itself is an array of executions
+            if (Array.isArray(res.data)) {
+              return { executions: res.data as Execution[], nextCursor: null } as ExecutionsListData;
+            }
+
+            // If data has executions property but not arrays (be defensive)
+            if (res.data.executions !== undefined) {
+              return {
+                executions: (res.data.executions as Execution[]) ?? [],
+                nextCursor: (res.data.nextCursor ?? null) as string | null
+              } as ExecutionsListData;
+            }
+
+            // Fallback when data exists but shape is unrecognized
+            return { executions: [], nextCursor: null } as ExecutionsListData;
           }
 
-          // If backend now returns the data object directly: { executions, nextCursor }
+          // If response is the page shape directly: { items, page, size, nextCursor }
+          const direct = extractFromObj(res);
+          if (direct) return direct;
+
+          // Back-compat: direct { executions, nextCursor }
           if (res.executions !== undefined) {
             return {
               executions: (res.executions as Execution[]) ?? [],
@@ -80,7 +125,7 @@ export class ExecutionsService {
             } as ExecutionsListData;
           }
 
-          // Fallback safe default
+          // As a last fallback, return empty list
           return { executions: [], nextCursor: null } as ExecutionsListData;
         })
       );
