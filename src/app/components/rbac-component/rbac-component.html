@@ -1,10 +1,25 @@
-<mat-tab-group mat-stretch-tabs>
+<mat-tab-group mat-stretch-tabs (selectedIndexChange)="onTabChange($event)">
 	<mat-tab label="Usuarios">
 		<div>
-			<mat-table [dataSource]="users" class="mat-elevation-z1">
+			<div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+				<mat-form-field appearance="outline" class="search-field" style="flex:1;">
+					<mat-icon matPrefix>search</mat-icon>
+					<input matInput placeholder="Buscar usuario" [(ngModel)]="userSearch" (ngModelChange)="onSearchChange()" />
+					<button mat-icon-button matSuffix aria-label="Limpiar" *ngIf="userSearch" (click)="clearUserSearch()">
+						<mat-icon>close</mat-icon>
+					</button>
+				</mat-form-field>
+				<button mat-flat-button color="primary" (click)="openCreateUser()">Crear</button>
+			</div>
+			<mat-table [dataSource]="filteredUsers()" class="mat-elevation-z1">
 				<ng-container matColumnDef="username">
 					<mat-header-cell *matHeaderCellDef> Usuario </mat-header-cell>
 					<mat-cell *matCellDef="let it"> {{ it.username }} </mat-cell>
+				</ng-container>
+
+				<ng-container matColumnDef="name">
+					<mat-header-cell *matHeaderCellDef> Nombre </mat-header-cell>
+					<mat-cell *matCellDef="let it"> {{ it.name || '-' }} </mat-cell>
 				</ng-container>
 
 				<ng-container matColumnDef="roles">
@@ -47,17 +62,37 @@
 				<ng-container matColumnDef="actions">
 					<mat-header-cell *matHeaderCellDef> Acciones </mat-header-cell>
 					<mat-cell *matCellDef="let it">
+								<button mat-icon-button color="warn" *ngIf="it.enabled" aria-label="Desactivar usuario" (click)="toggleUserEnabled(it)">
+									<mat-icon>toggle_on</mat-icon>
+								</button>
+								<button mat-icon-button color="primary" *ngIf="!it.enabled" aria-label="Activar usuario" (click)="toggleUserEnabled(it)">
+									<mat-icon>toggle_off</mat-icon>
+								</button>
+						<!-- Edit display name -->
+						<button mat-icon-button aria-label="Editar nombre" title="Editar nombre" (click)="editUserName(it)">
+							<mat-icon>edit</mat-icon>
+						</button>
 					</mat-cell>
 				</ng-container>
 
 				<mat-header-row *matHeaderRowDef="displayedColumnsUsers"></mat-header-row>
-				<mat-row *matRowDef="let row; columns: displayedColumnsUsers;"></mat-row>
+				<mat-row *matRowDef="let row; columns: displayedColumnsUsers;" [class.deemphasized]="!row.enabled"></mat-row>
 			</mat-table>
 		</div>
 	</mat-tab>
 	<mat-tab label="Roles">
 		<div>
-			<mat-table [dataSource]="rolesList" class="mat-elevation-z1">
+			<div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+				<mat-form-field appearance="outline" class="search-field" style="flex:1;">
+					<mat-icon matPrefix>search</mat-icon>
+					<input matInput placeholder="Buscar rol" [(ngModel)]="roleSearch" (ngModelChange)="onSearchChange()" />
+					<button mat-icon-button matSuffix aria-label="Limpiar" *ngIf="roleSearch" (click)="clearRoleSearch()">
+						<mat-icon>close</mat-icon>
+					</button>
+				</mat-form-field>
+				<button mat-flat-button color="primary" (click)="openCreateRole()">Crear</button>
+			</div>
+			<mat-table [dataSource]="filteredRolesForTable()" class="mat-elevation-z1">
 				<ng-container matColumnDef="name">
 					<mat-header-cell *matHeaderCellDef> Rol </mat-header-cell>
 					<mat-cell *matCellDef="let it"> {{ it.name }} </mat-cell>
@@ -116,7 +151,10 @@
 				<ng-container matColumnDef="actions">
 					<mat-header-cell *matHeaderCellDef> Acciones </mat-header-cell>
 					<mat-cell *matCellDef="let it">
-						<!-- acciones removidas -->
+						<!-- Edit role name -->
+						<button mat-icon-button aria-label="Editar rol" title="Editar rol" (click)="editRoleName(it)">
+							<mat-icon>edit</mat-icon>
+						</button>
 					</mat-cell>
 				</ng-container>
 				<mat-header-row *matHeaderRowDef="displayedColumnsRoles"></mat-header-row>
@@ -126,7 +164,17 @@
 	</mat-tab>
 	<mat-tab label="Namespaces">
 		<div>
-			<mat-table [dataSource]="namespacesList" class="mat-elevation-z1">
+			<div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+				<mat-form-field appearance="outline" class="search-field" style="flex:1;">
+					<mat-icon matPrefix>search</mat-icon>
+					<input matInput placeholder="Buscar namespace" [(ngModel)]="namespaceSearch" (ngModelChange)="onSearchChange()" />
+					<button mat-icon-button matSuffix aria-label="Limpiar" *ngIf="namespaceSearch" (click)="clearNamespaceSearch()">
+						<mat-icon>close</mat-icon>
+					</button>
+				</mat-form-field>
+				<button mat-flat-button color="primary" (click)="openCreateNamespace()">Crear</button>
+			</div>
+			<mat-table [dataSource]="filteredNamespacesForTable()" class="mat-elevation-z1">
 				<ng-container matColumnDef="name">
 					<mat-header-cell *matHeaderCellDef> Namespace </mat-header-cell>
 					<mat-cell *matCellDef="let it"> {{ it.name }} </mat-cell>
@@ -135,18 +183,26 @@
 					<mat-header-cell *matHeaderCellDef> Procesos </mat-header-cell>
 					<mat-cell *matCellDef="let it">
 						<!-- Read-only stacked chips: show processes assigned to this namespace. No remove/add actions here. -->
-						<mat-chip-set class="stacked-chip-set" aria-label="Procesos del namespace">
-							<mat-chip *ngFor="let p of (it.processes || []); trackBy: trackByProcess"
-								class="stacked-chip" selectable="false">
-								{{ p.name }}
-							</mat-chip>
-						</mat-chip-set>
+						<ng-container *ngIf="it.processes && it.processes.length; else noProcessesTpl">
+							<mat-chip-set class="stacked-chip-set" aria-label="Procesos del namespace">
+								<mat-chip *ngFor="let p of it.processes; trackBy: trackByProcess"
+									class="stacked-chip" selectable="false">
+									{{ p.name }}
+								</mat-chip>
+							</mat-chip-set>
+						</ng-container>
+						<ng-template #noProcessesTpl>
+							<span class="no-processes">Sin procesos asignados</span>
+						</ng-template>
 					</mat-cell>
 				</ng-container>
 				<ng-container matColumnDef="actions">
 					<mat-header-cell *matHeaderCellDef> Acciones </mat-header-cell>
 					<mat-cell *matCellDef="let it">
-						<!-- acciones removidas -->
+						<!-- Edit namespace name -->
+						<button mat-icon-button aria-label="Editar namespace" title="Editar namespace" (click)="editNamespaceName(it)">
+							<mat-icon>edit</mat-icon>
+						</button>
 					</mat-cell>
 				</ng-container>
 				<mat-header-row *matHeaderRowDef="displayedColumnsNamespaces"></mat-header-row>
@@ -156,10 +212,24 @@
 	</mat-tab>
 	<mat-tab label="Procesos">
 		<div>
-			<mat-table [dataSource]="processes" class="mat-elevation-z1">
+			<mat-form-field appearance="outline" class="search-field" style="width:100%; margin-bottom:8px;">
+				<mat-icon matPrefix>search</mat-icon>
+				<input matInput placeholder="Buscar proceso" [(ngModel)]="processSearch" (ngModelChange)="onSearchChange()" />
+				<button mat-icon-button matSuffix aria-label="Limpiar" *ngIf="processSearch" (click)="clearProcessSearch()">
+					<mat-icon>close</mat-icon>
+				</button>
+			</mat-form-field>
+			<mat-table [dataSource]="filteredProcessesForTable()" class="mat-elevation-z1">
 				<ng-container matColumnDef="name">
 					<mat-header-cell *matHeaderCellDef> Proceso </mat-header-cell>
 					<mat-cell *matCellDef="let it"> {{ it.name }} </mat-cell>
+				</ng-container>
+
+				<ng-container matColumnDef="description">
+					<mat-header-cell *matHeaderCellDef> Descripción </mat-header-cell>
+					<mat-cell *matCellDef="let it">
+						<span class="process-description" [title]="it.description || ''">{{ (it.description || '-') }}</span>
+					</mat-cell>
 				</ng-container>
 				<ng-container matColumnDef="namespace">
 					<mat-header-cell *matHeaderCellDef> Namespace </mat-header-cell>
@@ -203,7 +273,10 @@
 				<ng-container matColumnDef="actions">
 					<mat-header-cell *matHeaderCellDef> Acciones </mat-header-cell>
 					<mat-cell *matCellDef="let it">
-						<!-- acciones removidas -->
+						<!-- Edit process (name/description) -->
+						<button mat-icon-button aria-label="Editar proceso" title="Editar proceso" (click)="editProcess(it)">
+							<mat-icon>edit</mat-icon>
+						</button>
 					</mat-cell>
 				</ng-container>
 				<mat-header-row *matHeaderRowDef="displayedColumnsProcesses"></mat-header-row>

@@ -10,11 +10,14 @@ import { MatTableModule } from '@angular/material/table';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatAutocompleteModule, MatAutocompleteTrigger } from '@angular/material/autocomplete';
 import { ConfirmDialogComponent } from '../../components/confirm-dialog/confirm-dialog';
+import { RbacCreateDialogComponent, RbacCreateDialogResult } from '../../components/rbac-create-dialog/rbac-create-dialog';
+import { RbacUpdateDialogComponent, RbacUpdateDialogResult } from '../../components/rbac-update-dialog/rbac-update-dialog';
 import { RbacService, RoleRbacDto, UserRbacDto, RoleRefDto, NamespaceRbacDto, ProcessRbacDto } from '../../services/rbac-service';
 
 @Component({
@@ -32,9 +35,10 @@ import { RbacService, RoleRbacDto, UserRbacDto, RoleRefDto, NamespaceRbacDto, Pr
     MatTabsModule,
     MatSnackBarModule,
     MatFormFieldModule,
+  MatInputModule,
     MatSelectModule,
-    MatDialogModule,
-    MatAutocompleteModule
+  MatDialogModule,
+  MatAutocompleteModule
     
   ],
   templateUrl: './rbac-component.html',
@@ -43,6 +47,11 @@ import { RbacService, RoleRbacDto, UserRbacDto, RoleRefDto, NamespaceRbacDto, Pr
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class RbacComponent implements OnInit {
+  // Search inputs for each tab (filter first-column values)
+  userSearch: string = '';
+  roleSearch: string = '';
+  namespaceSearch: string = '';
+  processSearch: string = '';
   // Users/roles data from backend
   users: UserRbacDto[] = [];
   rolesList: RoleRbacDto[] = [];
@@ -73,10 +82,11 @@ export class RbacComponent implements OnInit {
   // Process inputs for Namespaces tab
   // Process inputs for Namespaces tab (removed: Namespaces tab is read-only now)
 
-  displayedColumnsUsers: string[] = ['username', 'roles', 'actions'];
+  displayedColumnsUsers: string[] = ['username', 'name', 'roles', 'actions'];
   displayedColumnsRoles: string[] = ['name', 'permissions', 'actions'];
   displayedColumnsNamespaces: string[] = ['name', 'processes', 'actions'];
-  displayedColumnsProcesses: string[] = ['name', 'namespace', 'actions'];
+  // Show description column (nullable) between name and namespace
+  displayedColumnsProcesses: string[] = ['name', 'description', 'namespace', 'actions'];
 
   // Services
   private rbac = inject(RbacService);
@@ -113,6 +123,72 @@ export class RbacComponent implements OnInit {
     this.loadRoles();
     this.loadNamespaces();
     this.loadProcesses();
+  }
+
+  // Called on ngModelChange for search inputs to ensure OnPush updates
+  onSearchChange(): void {
+    try { this.cdr.markForCheck(); } catch {}
+  }
+
+  /**
+   * Clear all search inputs when the active tab changes.
+   * We accept the selected index but don't need it for logic here.
+   */
+  onTabChange(_: number): void {
+    // Clear all search strings
+    this.userSearch = '';
+    this.roleSearch = '';
+    this.namespaceSearch = '';
+    this.processSearch = '';
+    // Ensure the view updates (OnPush)
+    this.onSearchChange();
+  }
+
+  // Clear helpers for each search input (used by the small clear-icon buttons)
+  clearUserSearch(): void {
+    this.userSearch = '';
+    this.onSearchChange();
+  }
+
+  clearRoleSearch(): void {
+    this.roleSearch = '';
+    this.onSearchChange();
+  }
+
+  clearNamespaceSearch(): void {
+    this.namespaceSearch = '';
+    this.onSearchChange();
+  }
+
+  clearProcessSearch(): void {
+    this.processSearch = '';
+    this.onSearchChange();
+  }
+
+  // Filter helpers used by the template as dataSource inputs. Each
+  // filters the first-column field for its tab.
+  filteredUsers(): UserRbacDto[] {
+    const q = (this.userSearch ?? '').toString().toLowerCase().trim();
+    if (!q) return this.users;
+    return this.users.filter(u => (u.username ?? '').toLowerCase().includes(q));
+  }
+
+  filteredRolesForTable(): RoleRbacDto[] {
+    const q = (this.roleSearch ?? '').toString().toLowerCase().trim();
+    if (!q) return this.rolesList;
+    return this.rolesList.filter(r => (r.name ?? '').toLowerCase().includes(q));
+  }
+
+  filteredNamespacesForTable(): NamespaceRbacDto[] {
+    const q = (this.namespaceSearch ?? '').toString().toLowerCase().trim();
+    if (!q) return this.namespacesList;
+    return this.namespacesList.filter(n => (n.name ?? '').toLowerCase().includes(q));
+  }
+
+  filteredProcessesForTable(): ProcessRbacDto[] {
+    const q = (this.processSearch ?? '').toString().toLowerCase().trim();
+    if (!q) return this.processes;
+    return this.processes.filter(p => (p.name ?? '').toLowerCase().includes(q));
   }
 
   // Data loaders
@@ -378,6 +454,52 @@ export class RbacComponent implements OnInit {
     });
   }
 
+  // --- Create entities (users / roles / namespaces) via small dialog ---
+  openCreateUser(): void {
+    const ref = this.dialog.open(RbacCreateDialogComponent, { data: { kind: 'user' } });
+    ref.afterClosed().subscribe((res: RbacCreateDialogResult | null) => {
+      if (!res) return;
+      const req: any = { username: res.name, password: res.password ?? '' };
+      // include optional full display name when provided by the dialog
+      if ((res as any).fullName !== undefined) req.name = (res as any).fullName;
+      this.rbac.createUser(req).subscribe({
+        next: () => {
+          this.snack('Usuario creado');
+          this.loadUsers();
+        },
+        error: () => this.snack('No se pudo crear el usuario')
+      });
+    });
+  }
+
+  openCreateRole(): void {
+    const ref = this.dialog.open(RbacCreateDialogComponent, { data: { kind: 'role' } });
+    ref.afterClosed().subscribe((res: RbacCreateDialogResult | null) => {
+      if (!res) return;
+      this.rbac.createRole({ name: res.name }).subscribe({
+        next: () => {
+          this.snack('Rol creado');
+          this.loadRoles();
+        },
+        error: () => this.snack('No se pudo crear el rol')
+      });
+    });
+  }
+
+  openCreateNamespace(): void {
+    const ref = this.dialog.open(RbacCreateDialogComponent, { data: { kind: 'namespace' } });
+    ref.afterClosed().subscribe((res: RbacCreateDialogResult | null) => {
+      if (!res) return;
+      this.rbac.createNamespace({ name: res.name }).subscribe({
+        next: () => {
+          this.snack('Namespace creado');
+          this.loadNamespaces();
+        },
+        error: () => this.snack('No se pudo crear el namespace')
+      });
+    });
+  }
+
   addNamespaceToProcess(process: ProcessRbacDto): void {
     const namespaceId = this.selectedNamespaceIdToAdd[process.id];
     if (!namespaceId) return;
@@ -497,6 +619,100 @@ export class RbacComponent implements OnInit {
         this.loadUsers();
       },
       error: () => this.snack('No se pudo eliminar el rol')
+    });
+  }
+
+  /** Toggle the user's enabled flag */
+  toggleUserEnabled(user: UserRbacDto): void {
+    const newValue = !(user.enabled === true);
+    this.rbac.updateUserEnabled(user.id, newValue).subscribe({
+      next: () => {
+        this.snack(newValue ? 'Usuario activado' : 'Usuario desactivado');
+        // Update local model and refresh list
+        try { user.enabled = newValue; } catch {}
+        this.loadUsers();
+      },
+      error: () => this.snack('No se pudo actualizar el estado del usuario')
+    });
+  }
+
+  /** Edit user's display name via a quick prompt (validate non-empty) */
+  editUserName(user: UserRbacDto): void {
+    const ref = this.dialog.open(RbacUpdateDialogComponent, {
+      data: { kind: 'user', name: user.name }
+    });
+
+    ref.afterClosed().subscribe((res: RbacUpdateDialogResult | null) => {
+      if (!res) return;
+      const name = res.name;
+      this.rbac.updateUserName(user.id, name).subscribe({
+        next: () => {
+          this.snack('Nombre de usuario actualizado');
+          this.loadUsers();
+        },
+        error: () => this.snack('No se pudo actualizar el nombre del usuario')
+      });
+    });
+  }
+
+  /** Edit a role's name (quick prompt). On success reload roles and users. */
+  editRoleName(role: RoleRbacDto): void {
+    const ref = this.dialog.open(RbacUpdateDialogComponent, {
+      data: { kind: 'role', name: role.name }
+    });
+
+    ref.afterClosed().subscribe((res: RbacUpdateDialogResult | null) => {
+      if (!res) return;
+      const name = res.name;
+      this.rbac.updateRoleName(role.id, name).subscribe({
+        next: () => {
+          this.snack('Nombre del rol actualizado');
+          this.loadRoles();
+          this.loadUsers();
+        },
+        error: () => this.snack('No se pudo actualizar el nombre del rol')
+      });
+    });
+  }
+
+  /** Edit a namespace's name (quick prompt). On success reload namespaces and roles. */
+  editNamespaceName(ns: NamespaceRbacDto): void {
+    const ref = this.dialog.open(RbacUpdateDialogComponent, {
+      data: { kind: 'namespace', name: ns.name }
+    });
+
+    ref.afterClosed().subscribe((res: RbacUpdateDialogResult | null) => {
+      if (!res) return;
+      const name = res.name;
+      this.rbac.updateNamespaceName(ns.id, name).subscribe({
+        next: () => {
+          this.snack('Namespace renombrado');
+          this.loadNamespaces();
+          this.loadRoles();
+        },
+        error: () => this.snack('No se pudo renombrar el namespace')
+      });
+    });
+  }
+
+  /** Edit a process's name and description (two prompts). On success reload processes & namespaces. */
+  editProcess(process: ProcessRbacDto): void {
+    const ref = this.dialog.open(RbacUpdateDialogComponent, {
+      data: { kind: 'process', name: process.name, description: process.description }
+    });
+
+    ref.afterClosed().subscribe((res: RbacUpdateDialogResult | null) => {
+      if (!res) return;
+      const name = res.name;
+      const description = (res.description === undefined) ? process.description : res.description;
+      this.rbac.updateProcess(process.id, { name, description }).subscribe({
+        next: () => {
+          this.snack('Proceso actualizado');
+          this.loadProcesses();
+          this.loadNamespaces();
+        },
+        error: () => this.snack('No se pudo actualizar el proceso')
+      });
     });
   }
 

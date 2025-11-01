@@ -56,3 +56,25 @@
   align-items: center;
   gap: 6px;
 }
+
+/* Truncate long process descriptions with ellipsis; show full text on hover via title attr */
+.process-description {
+  display: inline-block;
+  max-width: 360px; /* reasonable width for table column */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+
+/* De-emphasize rows for users that are not enabled (less visual accent) */
+.deemphasized {
+  opacity: 0.64; /* slightly muted */
+  filter: grayscale(12%);
+}
+
+/* Make sure icon-only action buttons align nicely inside table cells */
+.mat-row .mat-icon-button {
+  height: 36px;
+  width: 36px;
+}
