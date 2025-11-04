@@ -15,7 +15,6 @@ export interface RbacCreateDialogResult {
   name: string;
   // fullName is optional and only used when creating users (display/full name)
   fullName?: string;
-  password?: string;
 }
 
 @Component({
@@ -28,18 +27,14 @@ export interface RbacCreateDialogResult {
       <mat-form-field appearance="outline" style="width:100%">
         <input matInput placeholder="{{ namePlaceholder }}" [(ngModel)]="name" />
       </mat-form-field>
-
       <div *ngIf="data.kind === 'user'">
         <mat-form-field appearance="outline" style="width:100%">
           <input matInput placeholder="Nombre completo (opcional)" [(ngModel)]="fullName" />
         </mat-form-field>
-        <mat-form-field appearance="outline" style="width:100%">
-          <input matInput placeholder="Contraseña" type="password" [(ngModel)]="password" />
-        </mat-form-field>
       </div>
     </mat-dialog-content>
     <mat-dialog-actions align="end">
-      <button mat-flat-button color="primary" (click)="confirm()" [disabled]="!name || (data.kind === 'user' && !password)">Crear</button>
+      <button mat-flat-button color="primary" (click)="confirm()" [disabled]="!name">Crear</button>
       <button mat-button (click)="cancel()">Cancelar</button>
     </mat-dialog-actions>
   `
@@ -47,7 +42,6 @@ export interface RbacCreateDialogResult {
 export class RbacCreateDialogComponent {
   name: string = '';
   fullName: string = '';
-  password: string = '';
 
   constructor(
     private dialogRef: MatDialogRef<RbacCreateDialogComponent, RbacCreateDialogResult | null>,
@@ -73,7 +67,6 @@ export class RbacCreateDialogComponent {
   confirm() {
     const result: RbacCreateDialogResult = { name: this.name };
     if (this.data.kind === 'user') {
-      result.password = this.password;
       if (this.fullName) result.fullName = this.fullName;
     }
     this.dialogRef.close(result);

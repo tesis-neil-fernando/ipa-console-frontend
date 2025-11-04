@@ -18,7 +18,8 @@ import { MatAutocompleteModule, MatAutocompleteTrigger } from '@angular/material
 import { ConfirmDialogComponent } from '../../components/confirm-dialog/confirm-dialog';
 import { RbacCreateDialogComponent, RbacCreateDialogResult } from '../../components/rbac-create-dialog/rbac-create-dialog';
 import { RbacUpdateDialogComponent, RbacUpdateDialogResult } from '../../components/rbac-update-dialog/rbac-update-dialog';
-import { RbacService, RoleRbacDto, UserRbacDto, RoleRefDto, NamespaceRbacDto, ProcessRbacDto } from '../../services/rbac-service';
+import { RbacService, RoleRbacDto, UserRbacDto, RoleRefDto, NamespaceRbacDto, ProcessRbacDto, CreateUserRequest, CreateUserResponse } from '../../services/rbac-service';
+import { GeneratedPasswordDialogComponent, GeneratedPasswordDialogData } from '../../components/generated-password-dialog/generated-password-dialog';
 
 @Component({
   selector: 'app-rbac-component',
@@ -35,11 +36,11 @@ import { RbacService, RoleRbacDto, UserRbacDto, RoleRefDto, NamespaceRbacDto, Pr
     MatTabsModule,
     MatSnackBarModule,
     MatFormFieldModule,
-  MatInputModule,
+    MatInputModule,
     MatSelectModule,
-  MatDialogModule,
-  MatAutocompleteModule
-    
+    MatDialogModule,
+    MatAutocompleteModule
+
   ],
   templateUrl: './rbac-component.html',
   styleUrls: ['./rbac-component.css']
@@ -127,7 +128,7 @@ export class RbacComponent implements OnInit {
 
   // Called on ngModelChange for search inputs to ensure OnPush updates
   onSearchChange(): void {
-    try { this.cdr.markForCheck(); } catch {}
+    try { this.cdr.markForCheck(); } catch { }
   }
 
   /**
@@ -199,7 +200,7 @@ export class RbacComponent implements OnInit {
         // Clear per-user filtered cache because users set changed
         this._filteredRolesCache = {};
         // Inform OnPush change detection that we've updated local state
-        try { this.cdr.markForCheck(); } catch {}
+        try { this.cdr.markForCheck(); } catch { }
       },
       error: () => this.snack('No se pudieron cargar los usuarios')
     });
@@ -216,9 +217,9 @@ export class RbacComponent implements OnInit {
         // roles are reloaded from the server.
         this._filteredPermissionsCache = {};
         // Rebuild the simple display model for roles (name + namespace:permission)
-        try { this.buildRolesDisplay(); } catch {}
+        try { this.buildRolesDisplay(); } catch { }
         // Inform OnPush change detection that we've updated local state
-        try { this.cdr.markForCheck(); } catch {}
+        try { this.cdr.markForCheck(); } catch { }
       },
       error: () => this.snack('No se pudieron cargar los roles')
     });
@@ -238,7 +239,7 @@ export class RbacComponent implements OnInit {
       const inputEl = this.roleInputs?.first?.nativeElement;
       if (inputEl) {
         inputEl.focus();
-        try { inputEl.setSelectionRange(0, inputEl.value.length); } catch {}
+        try { inputEl.setSelectionRange(0, inputEl.value.length); } catch { }
       }
       // Open the autocomplete panel so the user sees options immediately
       this.autoTriggers?.first?.openPanel();
@@ -267,7 +268,7 @@ export class RbacComponent implements OnInit {
       const inputEl = this.namespaceInputs?.first?.nativeElement;
       if (inputEl) {
         inputEl.focus();
-        try { inputEl.setSelectionRange(0, inputEl.value.length); } catch {}
+        try { inputEl.setSelectionRange(0, inputEl.value.length); } catch { }
       }
       // Open the autocomplete panel
       this.namespaceAutoTriggers?.first?.openPanel();
@@ -287,8 +288,8 @@ export class RbacComponent implements OnInit {
         // so clear the filtered-permissions cache to force recompute.
         this._filteredPermissionsCache = {};
         // Namespaces can affect how role permissions are displayed, rebuild
-        try { this.buildRolesDisplay(); } catch {}
-        try { this.cdr.markForCheck(); } catch {}
+        try { this.buildRolesDisplay(); } catch { }
+        try { this.cdr.markForCheck(); } catch { }
       },
       error: () => this.snack('No se pudieron cargar los namespaces')
     });
@@ -342,7 +343,7 @@ export class RbacComponent implements OnInit {
       const inputEl = this.permInputs?.first?.nativeElement;
       if (inputEl) {
         inputEl.focus();
-        try { inputEl.setSelectionRange(0, inputEl.value.length); } catch {}
+        try { inputEl.setSelectionRange(0, inputEl.value.length); } catch { }
       }
       this.permAutoTriggers?.first?.openPanel();
     }, 0);
@@ -419,7 +420,7 @@ export class RbacComponent implements OnInit {
         this.snack('Permiso eliminado');
         // Clear cached filtered permissions for this role so the removed
         // permission becomes selectable again immediately.
-        try { delete this._filteredPermissionsCache[role.id]; } catch {}
+        try { delete this._filteredPermissionsCache[role.id]; } catch { }
         this.loadRoles();
       },
       error: () => this.snack('No se pudo eliminar el permiso')
@@ -448,7 +449,7 @@ export class RbacComponent implements OnInit {
     this.rbac.listProcesses().subscribe({
       next: (p) => {
         this.processes = p ?? [];
-        try { this.cdr.markForCheck(); } catch {}
+        try { this.cdr.markForCheck(); } catch { }
       },
       error: () => this.snack('No se pudieron cargar los procesos')
     });
@@ -459,12 +460,19 @@ export class RbacComponent implements OnInit {
     const ref = this.dialog.open(RbacCreateDialogComponent, { data: { kind: 'user' } });
     ref.afterClosed().subscribe((res: RbacCreateDialogResult | null) => {
       if (!res) return;
-      const req: any = { username: res.name, password: res.password ?? '' };
-      // include optional full display name when provided by the dialog
-      if ((res as any).fullName !== undefined) req.name = (res as any).fullName;
+        const req: CreateUserRequest = { username: res.name };
+        // include optional full display name when provided by the dialog
+        if (res.fullName) req.name = res.fullName;
       this.rbac.createUser(req).subscribe({
-        next: () => {
-          this.snack('Usuario creado');
+        next: (created: CreateUserResponse) => {
+          // Open a persistent dialog with copy button for the autogenerated password
+          if (created?.password) {
+            this.dialog.open(GeneratedPasswordDialogComponent, {
+              data: { username: created.username, password: created.password } as GeneratedPasswordDialogData
+            });
+          } else {
+            this.snack('Usuario creado');
+          }
           this.loadUsers();
         },
         error: () => this.snack('No se pudo crear el usuario')
@@ -536,8 +544,8 @@ export class RbacComponent implements OnInit {
         this.snack('Namespace eliminado');
         // Clear any cached filtered results for this process so the removed
         // namespace becomes selectable again immediately.
-        try { delete this._filteredNamespacesCache[process.id]; } catch {}
-        try { this.namespaceSearchTextByProcess[process.id] = ''; } catch {}
+        try { delete this._filteredNamespacesCache[process.id]; } catch { }
+        try { this.namespaceSearchTextByProcess[process.id] = ''; } catch { }
         this.loadProcesses();
       },
       error: () => this.snack('No se pudo eliminar el namespace')
@@ -629,7 +637,7 @@ export class RbacComponent implements OnInit {
       next: () => {
         this.snack(newValue ? 'Usuario activado' : 'Usuario desactivado');
         // Update local model and refresh list
-        try { user.enabled = newValue; } catch {}
+        try { user.enabled = newValue; } catch { }
         this.loadUsers();
       },
       error: () => this.snack('No se pudo actualizar el estado del usuario')
