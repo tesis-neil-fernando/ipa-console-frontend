@@ -108,7 +108,8 @@ export class Logs implements OnInit {
     this.loading = true;
     this.error = null;
 
-    const opts: any = { limit: 50 };
+  // Fixed page size as requested: always fetch 20 executions.
+  const opts: any = { limit: 20 };
     const cursor = this.cursors[page] ?? null;
     if (cursor) opts.cursor = cursor;
     if (this.filters.status) opts.status = this.filters.status;

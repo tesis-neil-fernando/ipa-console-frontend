@@ -13,7 +13,6 @@ export interface RbacCreateDialogData {
 
 export interface RbacCreateDialogResult {
   name: string;
-  // fullName is optional and only used when creating users (display/full name)
   fullName?: string;
 }
 
