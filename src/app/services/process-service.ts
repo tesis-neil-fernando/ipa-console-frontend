@@ -11,9 +11,6 @@ export class ProcessService {
   private http = inject(HttpClient);
 
   getProcesses() {
-    // By default return processes without forcing active=true so the caller
-    // can choose whether to include inactive processes. Keep filtering by
-    // tags and archived=false server-side.
     // Example all: GET /processes?tags=tool,Webhook&archived=false
     return this.http.get<any[]>(`${this.apiUrl}?tags=tool,Webhook&archived=false`);
   }
