@@ -89,17 +89,47 @@
 
             <div class="params-list">
               <div *ngFor="let p of editedParameters" class="param-row">
-                <mat-form-field appearance="fill" style="width:100%">
-                  <mat-label>{{ p.name }}</mat-label>
-                  <input matInput [type]="p.type === 'number' ? 'number' : 'text'" [(ngModel)]="p.value"
-                    name="param-{{p.id}}">
+                <!-- Boolean parameters are rendered as a checkbox with label so the name is visible -->
+                <ng-container *ngIf="(p.type || '').toString().toLowerCase() === 'boolean'">
+                  <div style="display:flex;align-items:center;gap:8px;width:100%">
+                    <mat-checkbox [(ngModel)]="p.value" name="param-{{p.id}}">{{ p.name }}</mat-checkbox>
 
-                  <!-- Delete as a suffix inside the form field. Use type="button" to avoid accidental form submits. -->
-                  <button mat-icon-button matSuffix color="warn" aria-label="Eliminar parámetro"
-                    (click)="p.id ? deleteParameter(p) : removeLocalParameter(p)" type="button">
-                    <mat-icon>delete</mat-icon>
-                  </button>
-                </mat-form-field>
+                    <span class="example-spacer"></span>
+
+                    <!-- Cron help (unlikely for boolean but keep check) -->
+                    <button *ngIf="isCronParam(p)" mat-icon-button color="primary" aria-label="Ayuda formato cron"
+                      (click)="openCronHelp(p)" type="button" matTooltip="Formato cron — Ver documentación">
+                      <mat-icon>help</mat-icon>
+                    </button>
+
+                    <!-- Delete is hidden for cron and for protected names (Programado / Programación) -->
+                    <button *ngIf="!isCronParam(p) && !isProtectedParam(p)" mat-icon-button color="warn" aria-label="Eliminar parámetro"
+                      (click)="p.id ? deleteParameter(p) : removeLocalParameter(p)" type="button">
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </div>
+                </ng-container>
+
+                <!-- Other parameter types: text/number input -->
+                <ng-container *ngIf="(p.type || '').toString().toLowerCase() !== 'boolean'">
+                  <mat-form-field appearance="fill" style="width:100%">
+                    <mat-label>{{ p.name }}</mat-label>
+                    <input matInput [type]="p.type === 'number' ? 'number' : 'text'" [(ngModel)]="p.value"
+                      name="param-{{p.id}}">
+
+                    <!-- Cron help (when parameter type is cron) -->
+                    <button *ngIf="isCronParam(p)" mat-icon-button matSuffix color="primary"
+                      aria-label="Ayuda formato cron" (click)="openCronHelp(p)" type="button" matTooltip="Formato cron — Ver documentación">
+                      <mat-icon>help</mat-icon>
+                    </button>
+
+                    <!-- Delete is hidden for cron and for protected names (Programado / Programación) -->
+                    <button *ngIf="!isCronParam(p) && !isProtectedParam(p)" mat-icon-button matSuffix color="warn" aria-label="Eliminar parámetro"
+                      (click)="p.id ? deleteParameter(p) : removeLocalParameter(p)" type="button">
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </mat-form-field>
+                </ng-container>
               </div>
 
               <div class="add-param-row" style="display:flex;gap:8px;align-items:center;margin-top:8px">

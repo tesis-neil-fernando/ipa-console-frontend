@@ -10,11 +10,12 @@ import { MatInputModule } from '@angular/material/input';
 import { FormsModule } from '@angular/forms';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { ProcessService } from '../../services/process-service';
 
 @Component({
   selector: 'app-processes',
-  imports: [CommonModule, MatCardModule, MatButtonModule, MatIconModule, MatCheckboxModule, MatProgressSpinnerModule, MatFormFieldModule, MatInputModule, FormsModule, MatSnackBarModule],
+  imports: [CommonModule, MatCardModule, MatButtonModule, MatIconModule, MatCheckboxModule, MatProgressSpinnerModule, MatFormFieldModule, MatInputModule, FormsModule, MatSnackBarModule, MatTooltipModule],
   templateUrl: './processes.html',
   styleUrls: ['./processes.css']
 })
@@ -77,7 +78,14 @@ export class Processes implements OnInit {
     this.selectedProcess = process;
     // create a shallow copy for metadata (name/description) and a copy for parameters
     this.editedProcess = { ...process };
-    this.editedParameters = (process.parameters || []).map((p: any) => ({ ...p }));
+    // When loading parameters, coerce boolean typed parameters to actual booleans
+    this.editedParameters = (process.parameters || []).map((p: any) => {
+      const copy: any = { ...p };
+      if ((copy.type || '').toString().toLowerCase() === 'boolean') {
+        copy.value = copy.value === true || copy.value === 'true' || copy.value === '1';
+      }
+      return copy;
+    });
   }
 
   /**
@@ -146,6 +154,11 @@ export class Processes implements OnInit {
    */
   deleteParameter(param: any) {
     if (!this.selectedProcess || !param?.id) return;
+    // Prevent deletion of protected parameters (e.g. Programado / Programación) and cron parameters
+    if (this.isProtectedParam(param) || this.isCronParam(param)) {
+      this.snackBar.open('Este parámetro no puede ser eliminado desde aquí.', 'Cerrar', { duration: 5000 });
+      return;
+    }
     const procId = String(this.selectedProcess.id);
     const paramId = String(param.id);
 
@@ -166,8 +179,43 @@ export class Processes implements OnInit {
     });
   }
 
+  /**
+   * Open external documentation about cron format in a new tab.
+   * If the project has an internal docs page, this URL can be changed.
+   */
+  openCronHelp(param?: any) {
+    // Optionally we could show a dialog with brief info before navigating; for now open crontab.guru
+    const url = 'https://crontab.guru/';
+    try {
+      window.open(url, '_blank');
+    } catch (e) {
+      // Fallback: inform the user with a snackbar
+      this.snackBar.open('Abre la documentación de cron en: ' + url, 'Cerrar', { duration: 6000 });
+    }
+  }
+
+  // Return true when the parameter name is one of the protected ones (cannot be deleted)
+  isProtectedParam(param: any): boolean {
+    if (!param || !param.name) return false;
+    const raw = (param.name || '').toString();
+    // strip accents for robust comparison (e.g., Programación)
+  const normalized = raw.normalize ? raw.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() : raw.toLowerCase();
+    // accepted protected names: Programado, Programación (normalized below)
+    return normalized === 'programado' || normalized === 'programacion';
+  }
+
+  // Simple cron-type checker
+  isCronParam(param: any): boolean {
+    return ((param?.type || '').toString().toLowerCase() === 'cron');
+  }
+
   // Remove a local (unsaved) parameter from the editedParameters list
   removeLocalParameter(param: any) {
+    // Prevent removal of protected local parameters, if any
+    if (this.isProtectedParam(param) || this.isCronParam(param)) {
+      this.snackBar.open('Este parámetro no puede ser eliminado.', 'Cerrar', { duration: 5000 });
+      return;
+    }
     this.editedParameters = this.editedParameters.filter(p => p !== param);
   }
 
@@ -229,6 +277,11 @@ export class Processes implements OnInit {
         // try to convert to number
         const n = Number(copy.value);
         copy.value = isNaN(n) ? copy.value : n;
+      } else if ((copy.type || '').toString().toLowerCase() === 'boolean') {
+        // The backend expects boolean-ish values as strings. Convert whatever the UI holds
+        // (true/false or 'true'/'false'/'1') into the canonical string 'true' or 'false'.
+        const truthy = copy.value === true || copy.value === 'true' || copy.value === '1';
+        copy.value = truthy ? 'true' : 'false';
       }
       return copy;
     });
