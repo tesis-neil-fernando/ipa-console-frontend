@@ -93,7 +93,21 @@
                   <mat-label>{{ p.name }}</mat-label>
                   <input matInput [type]="p.type === 'number' ? 'number' : 'text'" [(ngModel)]="p.value"
                     name="param-{{p.id}}">
+
+                  <!-- Delete as a suffix inside the form field. Use type="button" to avoid accidental form submits. -->
+                  <button mat-icon-button matSuffix color="warn" aria-label="Eliminar parámetro"
+                    (click)="p.id ? deleteParameter(p) : removeLocalParameter(p)" type="button">
+                    <mat-icon>delete</mat-icon>
+                  </button>
                 </mat-form-field>
+              </div>
+
+              <div class="add-param-row" style="display:flex;gap:8px;align-items:center;margin-top:8px">
+                <mat-form-field appearance="fill" style="flex:1">
+                  <mat-label>Nuevo parámetro (nombre)</mat-label>
+                  <input matInput [(ngModel)]="newParamName" name="new-param-name">
+                </mat-form-field>
+                <button mat-flat-button color="primary" (click)="addParameter()" [disabled]="!newParamName">Agregar</button>
               </div>
             </div>
           </div>

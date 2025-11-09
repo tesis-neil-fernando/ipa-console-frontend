@@ -36,6 +36,8 @@ export class Processes implements OnInit {
   editedProcess: any = null;
   // Local editable copy of parameters
   editedParameters: Array<any> = [];
+  // Temporary input for creating a new parameter (string-only for now)
+  newParamName = '';
 
   ngOnInit(): void {
     this.loadProcesses();
@@ -76,6 +78,97 @@ export class Processes implements OnInit {
     // create a shallow copy for metadata (name/description) and a copy for parameters
     this.editedProcess = { ...process };
     this.editedParameters = (process.parameters || []).map((p: any) => ({ ...p }));
+  }
+
+  /**
+   * Add a new string parameter to the selected process by sending a PATCH.
+   * The backend will create the parameter and we refresh the processes list.
+   */
+  addParameter() {
+    if (!this.selectedProcess) return;
+    const name = (this.newParamName || '').trim();
+    if (!name) return;
+
+    const body: any = {
+      parameters: [
+        {
+          name,
+          value: '',
+          type: 'string'
+        }
+      ]
+    };
+
+    this.processService.patchProcess(String(this.selectedProcess.id), body).subscribe({
+      next: (res: any) => {
+        this.snackBar.open(res?.message ?? 'Parámetro agregado', 'Cerrar', { duration: 3000 });
+        this.newParamName = '';
+        // Fetch the updated process so the UI shows the newly created parameter (including server-assigned id)
+        const pid = String(this.selectedProcess.id);
+        this.processService.getProcessById(pid).subscribe({
+          next: (p: any) => {
+            // Map server process to the UI shape used in the list
+            const mapped = {
+              id: p.id,
+              name: p.name,
+              workflowName: p.workflow?.name ?? '',
+              description: p.description,
+              parameters: p.parameters ?? [],
+              active: p.workflow?.active ? 'Proceso Activo' : 'Proceso Inactivo',
+              status: p.executionBrief?.status ?? '',
+              startedAt: p.executionBrief?.startedAt ?? null,
+              canExecute: !!p.workflow?.tags && Array.isArray(p.workflow.tags) && p.workflow.tags.some((t: any) => (t?.name ?? '').toString().toLowerCase() === 'webhook')
+            };
+
+            const idx = this.processes.findIndex(pr => pr.id === mapped.id);
+            if (idx !== -1) this.processes[idx] = mapped;
+
+            // keep the selection open and update the editable copies
+            this.selectedProcess = mapped;
+            this.editedProcess = { ...mapped };
+            this.editedParameters = (mapped.parameters || []).map((pp: any) => ({ ...pp }));
+          },
+          error: (err: any) => {
+            console.error('Error fetching process after add', err);
+          }
+        });
+      },
+      error: (err: any) => {
+        console.error('Error adding parameter', err);
+        const errMsg = err?.error?.message ?? err?.message ?? 'Error al crear parámetro';
+        this.snackBar.open(errMsg, 'Cerrar', { duration: 4000 });
+      }
+    });
+  }
+
+  /**
+   * Remove a parameter from the process using the DELETE endpoint we added in the service.
+   */
+  deleteParameter(param: any) {
+    if (!this.selectedProcess || !param?.id) return;
+    const procId = String(this.selectedProcess.id);
+    const paramId = String(param.id);
+
+    this.processService.deleteParameter(procId, paramId).subscribe({
+      next: (res: any) => {
+        this.snackBar.open(res?.message ?? 'Parámetro eliminado', 'Cerrar', { duration: 3000 });
+        // remove from local copies so UI updates immediately
+        this.editedParameters = this.editedParameters.filter((p: any) => String(p.id) !== paramId);
+        if (this.selectedProcess && Array.isArray(this.selectedProcess.parameters)) {
+          this.selectedProcess.parameters = this.selectedProcess.parameters.filter((p: any) => String(p.id) !== paramId);
+        }
+      },
+      error: (err: any) => {
+        console.error('Error deleting parameter', err);
+        const errMsg = err?.error?.message ?? err?.message ?? 'Error al eliminar parámetro';
+        this.snackBar.open(errMsg, 'Cerrar', { duration: 4000 });
+      }
+    });
+  }
+
+  // Remove a local (unsaved) parameter from the editedParameters list
+  removeLocalParameter(param: any) {
+    this.editedParameters = this.editedParameters.filter(p => p !== param);
   }
 
   isStarting(process: any): boolean {
@@ -153,10 +246,33 @@ export class Processes implements OnInit {
         if (idx !== -1) {
           this.processes[idx] = { ...this.processes[idx], name: body.name, description: body.description, parameters: paramsToSend };
         }
-        // clear selection
-        this.selectedProcess = null;
-        this.editedProcess = null;
-        this.editedParameters = [];
+        // Keep selection open. Refresh the process details from the server so we show any server-side changes
+        const pid = String(this.selectedProcess.id);
+        this.processService.getProcessById(pid).subscribe({
+          next: (p: any) => {
+            const mapped = {
+              id: p.id,
+              name: p.name,
+              workflowName: p.workflow?.name ?? '',
+              description: p.description,
+              parameters: p.parameters ?? [],
+              active: p.workflow?.active ? 'Proceso Activo' : 'Proceso Inactivo',
+              status: p.executionBrief?.status ?? '',
+              startedAt: p.executionBrief?.startedAt ?? null,
+              canExecute: !!p.workflow?.tags && Array.isArray(p.workflow.tags) && p.workflow.tags.some((t: any) => (t?.name ?? '').toString().toLowerCase() === 'webhook')
+            };
+
+            if (idx !== -1) this.processes[idx] = mapped;
+            this.selectedProcess = mapped;
+            this.editedProcess = { ...mapped };
+            this.editedParameters = (mapped.parameters || []).map((pp: any) => ({ ...pp }));
+            this.snackBar.open(res?.message ?? 'Proceso actualizado', 'Cerrar', { duration: 3000 });
+          },
+          error: (err: any) => {
+            console.error('Error fetching updated process', err);
+            this.snackBar.open(res?.message ?? 'Proceso actualizado', 'Cerrar', { duration: 3000 });
+          }
+        });
       },
       error: (err: any) => {
         console.error('Error updating process', err);

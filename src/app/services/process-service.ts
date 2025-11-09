@@ -30,4 +30,13 @@ export class ProcessService {
       tap(res => console.log('Process updated', res))
     );
   }
+
+  deleteParameter(processId: string, parameterId: string) {
+    // DELETE /processes/:processId/parameters/:parameterId
+    return this.http.delete<{ message?: string }>(
+      `${this.apiUrl}/${processId}/parameters/${parameterId}`
+    ).pipe(
+      tap(res => console.log(res?.message ?? 'Parameter deleted'))
+    );
+  }
 }
