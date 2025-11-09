@@ -185,7 +185,7 @@ export class Processes implements OnInit {
    */
   openCronHelp(param?: any) {
     // Optionally we could show a dialog with brief info before navigating; for now open crontab.guru
-    const url = 'https://crontab.guru/';
+    const url = 'https://crontab.cronhub.io/';
     try {
       window.open(url, '_blank');
     } catch (e) {
