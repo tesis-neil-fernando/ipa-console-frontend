@@ -37,6 +37,8 @@ export class Processes implements OnInit {
   editedProcess: any = null;
   // Local editable copy of parameters
   editedParameters: Array<any> = [];
+  // Map of parameter-specific server error messages. Keyed by param id (string) or param name for unsaved params.
+  paramErrors: { [key: string]: string } = {};
   // Temporary input for creating a new parameter (string-only for now)
   newParamName = '';
 
@@ -76,16 +78,22 @@ export class Processes implements OnInit {
 
   selectProcess(process: any) {
     this.selectedProcess = process;
+  // Clear previous server-side parameter errors when selecting a new process
+  this.paramErrors = {};
     // create a shallow copy for metadata (name/description) and a copy for parameters
     this.editedProcess = { ...process };
     // When loading parameters, coerce boolean typed parameters to actual booleans
-    this.editedParameters = (process.parameters || []).map((p: any) => {
-      const copy: any = { ...p };
-      if ((copy.type || '').toString().toLowerCase() === 'boolean') {
-        copy.value = copy.value === true || copy.value === 'true' || copy.value === '1';
-      }
-      return copy;
-    });
+    this.editedParameters = (process.parameters || []).map((p: any) => this.normalizeParam(p));
+  }
+
+  // Normalize a parameter object coming from the server or UI into the shape the editor expects.
+  private normalizeParam(p: any): any {
+    const copy: any = { ...(p || {}) };
+    const t = ((copy.type || '') as string).toString().toLowerCase();
+    if (t === 'boolean') {
+      copy.value = copy.value === true || copy.value === 'true' || copy.value === '1';
+    }
+    return copy;
   }
 
   /**
@@ -134,7 +142,7 @@ export class Processes implements OnInit {
             // keep the selection open and update the editable copies
             this.selectedProcess = mapped;
             this.editedProcess = { ...mapped };
-            this.editedParameters = (mapped.parameters || []).map((pp: any) => ({ ...pp }));
+            this.editedParameters = (mapped.parameters || []).map((pp: any) => this.normalizeParam(pp));
           },
           error: (err: any) => {
             console.error('Error fetching process after add', err);
@@ -170,6 +178,8 @@ export class Processes implements OnInit {
         if (this.selectedProcess && Array.isArray(this.selectedProcess.parameters)) {
           this.selectedProcess.parameters = this.selectedProcess.parameters.filter((p: any) => String(p.id) !== paramId);
         }
+        // remove any server-side error attached to this parameter
+        delete this.paramErrors[paramId];
       },
       error: (err: any) => {
         console.error('Error deleting parameter', err);
@@ -209,6 +219,75 @@ export class Processes implements OnInit {
     return ((param?.type || '').toString().toLowerCase() === 'cron');
   }
 
+  /**
+   * Lightweight cron expression validator.
+   * Accepts common cron syntaxes with 5-7 space-separated fields.
+   * Each field may be a number, a range (n-m), a step expression (using a slash),
+   * or a comma-separated list. The validator is intentionally permissive (no named months/days)
+   * but prevents clearly invalid input.
+   */
+  validateCronExpr(expr: string): boolean {
+    if (!expr || typeof expr !== 'string') return false;
+    const parts = expr.trim().split(/\s+/);
+    // Typical cron: 5 (min hour dom mon dow) or 6/7 when seconds/year are used
+    if (parts.length < 5 || parts.length > 7) return false;
+
+    // token matches: '*', '*/n', 'n', 'n-m', 'n/m' and lists like '1,2,3' and combinations
+  const tokenRe = /^(?:\*|\?|(?:\d+)(?:-\d+)?(?:\/\d+)?|\*\/\d+)(?:,(?:\*|\?|(?:\d+)(?:-\d+)?(?:\/\d+)?|\*\/\d+))*$/;
+
+    return parts.every(p => tokenRe.test(p));
+  }
+
+  // Return true if the cron parameter is valid (or if the param isn't cron)
+  isCronValid(param: any): boolean {
+    if (!this.isCronParam(param)) return true;
+    const val = (param?.value ?? '').toString().trim();
+    // Empty cron is considered invalid (user must provide a value)
+    return this.validateCronExpr(val);
+  }
+
+  // Return true when all cron parameters currently in editedParameters are valid
+  isAllCronValid(): boolean {
+    if (!Array.isArray(this.editedParameters)) return true;
+    return this.editedParameters.every(p => this.isCronValid(p));
+  }
+
+  // Helper to normalize parameter names (strip accents, lowercase) for comparison
+  private normalizeName(raw: string): string {
+    if (!raw) return '';
+    const normalized = raw.normalize ? raw.normalize('NFD').replace(/[\u0300-\u036f]/g, '') : raw;
+    return normalized.toLowerCase();
+  }
+
+  // Map a backend error message to the parameter it refers to (if possible) and store it in paramErrors.
+  setServerParamError(message: string) {
+    if (!message) return;
+    // Try to extract the parameter name inside single quotes, e.g. 'Programación'
+    const quoted = message.match(/'([^']+)'/);
+    let paramName: string | null = null;
+    if (quoted && quoted[1]) paramName = quoted[1];
+
+    if (paramName) {
+      const normalized = this.normalizeName(paramName);
+      const found = (this.editedParameters || []).find((p: any) => this.normalizeName(p.name || '') === normalized);
+      if (found) {
+        const key = found.id ? String(found.id) : (found.name || paramName);
+        this.paramErrors[key] = message;
+        // Also surface the message as a snackbar for immediate feedback
+        this.snackBar.open(message, 'Cerrar', { duration: 6000 });
+        return;
+      }
+    }
+
+    // If we couldn't map to a parameter, show the message globally
+    this.snackBar.open(message, 'Cerrar', { duration: 6000 });
+  }
+
+  // Return true when we have any server-side param errors
+  hasParamErrors(): boolean {
+    return Object.keys(this.paramErrors || {}).length > 0;
+  }
+
   // Remove a local (unsaved) parameter from the editedParameters list
   removeLocalParameter(param: any) {
     // Prevent removal of protected local parameters, if any
@@ -217,6 +296,9 @@ export class Processes implements OnInit {
       return;
     }
     this.editedParameters = this.editedParameters.filter(p => p !== param);
+    // remove any local server-side error attached to this unsaved parameter (match by name)
+    const key = param && param.id ? String(param.id) : (param && param.name ? param.name : null);
+    if (key && this.paramErrors[key]) delete this.paramErrors[key];
   }
 
   isStarting(process: any): boolean {
@@ -270,6 +352,12 @@ export class Processes implements OnInit {
   updateSelectedProcess() {
     if (!this.selectedProcess) return;
 
+    // Prevent sending invalid cron parameters to the backend
+    if (!this.isAllCronValid()) {
+      this.snackBar.open('Hay parámetros cron inválidos. Corrija antes de actualizar.', 'Cerrar', { duration: 5000 });
+      return;
+    }
+
     // Prepare payload: normalize number types
     const paramsToSend = this.editedParameters.map(p => {
       const copy: any = { ...p };
@@ -297,7 +385,10 @@ export class Processes implements OnInit {
         // Update local processes list to reflect changes (name/description/parameters)
         const idx = this.processes.findIndex(p => p.id === this.selectedProcess.id);
         if (idx !== -1) {
-          this.processes[idx] = { ...this.processes[idx], name: body.name, description: body.description, parameters: paramsToSend };
+          // Update only the metadata optimistically (name/description). Do not replace parameters
+          // with the client-side payload (which may contain stringified booleans) because that
+          // causes the UI to temporarily reflect server-incompatible values (e.g. checkboxes).
+          this.processes[idx] = { ...this.processes[idx], name: body.name, description: body.description };
         }
         // Keep selection open. Refresh the process details from the server so we show any server-side changes
         const pid = String(this.selectedProcess.id);
@@ -318,7 +409,10 @@ export class Processes implements OnInit {
             if (idx !== -1) this.processes[idx] = mapped;
             this.selectedProcess = mapped;
             this.editedProcess = { ...mapped };
-            this.editedParameters = (mapped.parameters || []).map((pp: any) => ({ ...pp }));
+            // Normalize parameters so boolean-typed parameters are actual booleans in the editor.
+            this.editedParameters = (mapped.parameters || []).map((pp: any) => this.normalizeParam(pp));
+            // Clear any server-side param errors on successful refresh
+            this.paramErrors = {};
             this.snackBar.open(res?.message ?? 'Proceso actualizado', 'Cerrar', { duration: 3000 });
           },
           error: (err: any) => {
