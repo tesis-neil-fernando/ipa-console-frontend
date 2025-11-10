@@ -103,16 +103,15 @@
 						<mat-chip-set aria-label="Permisos del rol">
 							<!-- For each permission object, render one chip per namespace if present -->
 							<ng-container *ngFor="let p of (it.permissions || [])">
-								<ng-container *ngIf="p.namespaces && p.namespaces.length; else permNoNsTpl">
-									<mat-chip *ngFor="let ns of p.namespaces"
-										(removed)="confirmRemovePermissionFromRole(it, p.id)">
-										{{ ns.name }}:{{ p.type }}
+								<ng-container *ngIf="p.namespace; else permNoNsTpl">
+									<mat-chip (removed)="confirmRemovePermissionFromRole(it, p.id)">
+										{{ p.namespace.name }}:{{ p.action }}
 										<mat-icon matChipRemove>remove</mat-icon>
 									</mat-chip>
 								</ng-container>
 								<ng-template #permNoNsTpl>
 									<mat-chip (removed)="confirmRemovePermissionFromRole(it, p.id)">
-										{{ p.type }}
+										{{ p.action }}
 										<mat-icon matChipRemove>remove</mat-icon>
 									</mat-chip>
 								</ng-template>
@@ -127,7 +126,7 @@
 								<mat-chip color="primary" class="add-role-chip editing" selectable="false">
 									<input #permInput #permAutoTrigger="matAutocompleteTrigger" class="chip-input"
 										type="text" [(ngModel)]="permissionSearchTextByRole[it.id]"
-										[matAutocomplete]="permAuto" placeholder="Agregar permiso (namespace:tipo)" />
+										[matAutocomplete]="permAuto" placeholder="Agregar permiso (namespace:acción)" />
 									<mat-icon matChipRemove aria-label="Hecho" title="Hecho" type="button"
 										(click)="finishEditRole()">close</mat-icon>
 								</mat-chip>
@@ -137,7 +136,7 @@
 								(optionSelected)="onPermissionSelected(it, $event.option.value)">
 								<mat-option *ngFor="let o of filteredPermissions(it, permissionSearchTextByRole[it.id])"
 									[value]="o">
-									{{ o.namespaceName }}:{{ o.type }}
+									{{ o.namespaceName }}:{{ o.action }}
 								</mat-option>
 								<mat-option
 									*ngIf="filteredPermissions(it, permissionSearchTextByRole[it.id]).length === 0"

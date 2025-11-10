@@ -1,6 +1,5 @@
 import { Routes } from '@angular/router';
 import { MainLayout } from './layout/main-layout/main-layout';
-import { Home } from './sites/home/home';
 import { Processes } from './sites/processes/processes';
 import { Logs } from './sites/logs/logs';
 import { Settings } from './sites/settings/settings';
@@ -19,7 +18,6 @@ export const routes: Routes = [
         component: MainLayout,
         canActivateChild: [authGuard],
         children: [
-            { path: 'home', component: Home },
             { path: 'dashboard', component: Dashboard },
             { path: 'processes', component: Processes },
             { path: 'logs', component: Logs },

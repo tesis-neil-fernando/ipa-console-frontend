@@ -5,7 +5,12 @@
   </mat-card-header>
 
   <mat-card-content>
-    <app-rbac-component></app-rbac-component>
+    <ng-container *ngIf="canViewRbac; else notAllowedTpl">
+      <app-rbac-component></app-rbac-component>
+    </ng-container>
+    <ng-template #notAllowedTpl>
+      <div style="padding:12px; color:rgba(0,0,0,.6)">No tienes permisos para ver esta sección.</div>
+    </ng-template>
   </mat-card-content>
 </mat-card>
 <!--

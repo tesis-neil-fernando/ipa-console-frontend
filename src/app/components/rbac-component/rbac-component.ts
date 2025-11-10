@@ -305,14 +305,20 @@ export class RbacComponent implements OnInit {
       const parts: string[] = [];
       const perms = (role as any).permissions ?? [];
       for (const p of perms) {
-        const nsRefs = p.namespaces ?? [];
-        if (nsRefs.length) {
-          for (const nsRef of nsRefs) {
+        // Prefer new shape: p.action + p.namespace
+        const action = p.action ?? p.type ?? '';
+        if (p.namespace) {
+          const nsName = p.namespace.name ?? this.namespacesList?.find(n => n.id === (p.namespace as any).id)?.name ?? (`#${(p.namespace as any).id ?? 'unknown'}`);
+          parts.push(`${nsName}:${action}`);
+        } else if (p.namespaces && p.namespaces.length) {
+          // Back-compat: older shape had multiple namespaces per permission
+          for (const nsRef of p.namespaces) {
             const nsName = nsRef.name ?? this.namespacesList?.find(n => n.id === (nsRef as any).id)?.name ?? (`#${(nsRef as any).id ?? 'unknown'}`);
-            parts.push(`${nsName}:${p.type}`);
+            parts.push(`${nsName}:${action}`);
           }
         } else {
-          parts.push(p.type);
+          // Global permission
+          parts.push(action);
         }
       }
       return { name: role.name, permissions: parts.join(', ') };
@@ -332,7 +338,10 @@ export class RbacComponent implements OnInit {
   displayPermission = (p: any | string | null) => {
     if (!p) return '';
     if (typeof p === 'string') return p;
-    return `${p.namespaceName ?? ''}:${p.type ?? ''}`;
+    // p may be a flattened item (namespaceName + action) or a permission object
+    const action = p.action ?? p.type ?? '';
+    const nsName = p.namespaceName ?? (p.namespace?.name) ?? '';
+    return nsName ? `${nsName}:${action}` : `${action}`;
   };
 
   startEditRole(role: RoleRbacDto): void {
@@ -368,12 +377,16 @@ export class RbacComponent implements OnInit {
     const all: Array<any> = [];
     for (const ns of (this.namespacesList ?? [])) {
       for (const perm of (ns.permissions ?? [])) {
-        all.push({ id: perm.id, type: perm.type, namespaceId: ns.id, namespaceName: ns.name });
+        // perm may be in new shape (action + namespace) or old (type + namespaces[])
+        const action = (perm as any).action ?? (perm as any).type ?? '';
+        const namespaceId = ((perm as any).namespace?.id) ?? ns.id;
+        const namespaceName = ((perm as any).namespace?.name) ?? ns.name;
+        all.push({ id: (perm as any).id, action, namespaceId, namespaceName });
       }
     }
 
     const assignedIds = new Set<number>((role.permissions ?? []).map((p: any) => p.id));
-    const result = all.filter(a => !assignedIds.has(a.id) && (!q || (`${a.namespaceName}:${a.type}`).toLowerCase().includes(q) || a.type.toLowerCase().includes(q) || a.namespaceName.toLowerCase().includes(q)));
+    const result = all.filter(a => !assignedIds.has(a.id) && (!q || (`${a.namespaceName}:${a.action}`).toLowerCase().includes(q) || a.action.toLowerCase().includes(q) || a.namespaceName.toLowerCase().includes(q)));
     this._filteredPermissionsCache[roleId] = { q, result };
     return result;
   }
@@ -384,12 +397,12 @@ export class RbacComponent implements OnInit {
     if (typeof value === 'number') permissionId = value;
     else if (typeof value === 'object' && value.id != null) permissionId = value.id;
     else if (typeof value === 'string') {
-      // try to parse namespace:permission
+      // try to parse namespace:action
       const parts = value.split(':');
       if (parts.length === 2) {
         const ns = parts[0];
-        const type = parts[1];
-        const found = this.namespacesList.flatMap(n => (n.permissions ?? []).map((p: any) => ({ p, n }))).find(x => (x.n.name === ns || String(x.n.id) === ns) && x.p.type === type);
+        const action = parts[1];
+        const found = this.namespacesList.flatMap(n => (n.permissions ?? []).map((p: any) => ({ p, n }))).find(x => (x.n.name === ns || String(x.n.id) === ns) && ((x.p.action ?? x.p.type) === action));
         permissionId = found ? found.p.id : null;
       }
     }
@@ -430,7 +443,7 @@ export class RbacComponent implements OnInit {
   confirmRemovePermissionFromRole(role: RoleRbacDto, permissionId: number): void {
     // Try to get a readable label for the permission
     const perm = (role.permissions ?? []).find((p: any) => p.id === permissionId) as any | undefined;
-    const label = perm ? ((perm.namespaces && perm.namespaces.length) ? `${perm.namespaces.map((n: any) => n.name).join(',')}:${perm.type}` : perm.type) : 'este permiso';
+    const label = perm ? ((perm.namespace) ? `${perm.namespace.name}:${perm.action ?? perm.type}` : ((perm.namespaces && perm.namespaces.length) ? `${perm.namespaces.map((n: any) => n.name).join(',')}:${perm.action ?? perm.type}` : (perm.action ?? perm.type))) : 'este permiso';
     const ref = this.dialog.open(ConfirmDialogComponent, {
       data: {
         title: 'Confirmar eliminación',

@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RbacComponent } from '../../components/rbac-component/rbac-component';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
@@ -12,6 +12,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatDividerModule } from '@angular/material/divider';
+import { AuthService } from '../../services/auth-service';
 
 @Component({
   selector: 'app-settings',
@@ -39,6 +40,11 @@ export class Settings {
 
   // Holds the currently-selected row for actions opened via the menu
   selectedItem: any | null = null;
+
+  // Auth service (used to determine whether to show admin UI)
+  private auth = inject(AuthService);
+  // Flag that controls RBAC visibility — true only when the current user is admin
+  canViewRbac: boolean = this.auth.isAdmin();
 
   changeView(value: string) {
     if (value === 'users' || value === 'roles' || value === 'namespaces' || value === 'processes') {

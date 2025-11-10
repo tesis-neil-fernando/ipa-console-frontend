@@ -40,9 +40,21 @@ export interface RoleRefDto { id: number; name: string }
 export interface NamespaceRefDto { id: number; name: string }
 
 // Extend Permission DTO to include namespace refs when present on backend
+/**
+ * Permission shape returned by the RBAC API.
+ * Migration note: backend changed from { type, namespaces[] } to { action, namespace }.
+ * Support the new shape here and keep a small compatibility path when reading fields
+ * (the frontend code will prefer `action` and `namespace`).
+ */
 export interface PermissionRbacDto {
   id: number;
-  type: string;
+  // New field: action (e.g. 'view' | 'exec' | 'edit')
+  action: string;
+  // New field: single namespace reference or null for global permissions
+  namespace?: NamespaceRefDto | null;
+  // Back-compat: some older responses might still include these fields — keep them
+  // in the type as optional so code can handle both shapes when necessary.
+  type?: string;
   namespaces?: NamespaceRefDto[];
 }
 
