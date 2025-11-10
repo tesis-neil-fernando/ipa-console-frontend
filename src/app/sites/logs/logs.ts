@@ -37,7 +37,7 @@ type LogRow = Execution & { durationStr?: string; triggerStr?: string };
 export class Logs implements OnInit {
   @ViewChild('detailsDialog') detailsDialogTpl!: TemplateRef<any>;
 
-  displayedColumns = ['time', 'process', 'trigger', 'status', 'duration', 'actions'];
+  displayedColumns = ['time', 'process', 'trigger', 'status', 'duration'];
   // Local cache per page (cursor pagination)
   cursors: Record<number, string | null> = { 1: null }; // cursors[1] = null for first page
   logsByPage: Record<number, LogRow[]> = {};
