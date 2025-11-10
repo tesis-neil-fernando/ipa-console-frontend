@@ -40,8 +40,7 @@ import { ChangePasswordDialogComponent } from '../../components/change-password-
     MatInputModule,
     MatSelectModule,
     MatDialogModule,
-  MatAutocompleteModule,
-  ChangePasswordDialogComponent
+  MatAutocompleteModule
 
   ],
   templateUrl: './rbac-component.html',
