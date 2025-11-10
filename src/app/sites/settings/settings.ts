@@ -13,6 +13,8 @@ import { MatInputModule } from '@angular/material/input';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatDividerModule } from '@angular/material/divider';
 import { AuthService } from '../../services/auth-service';
+import { SessionsService, SessionDto } from '../../services/sessions-service';
+import { OnInit } from '@angular/core';
 
 @Component({
   selector: 'app-settings',
@@ -28,7 +30,7 @@ import { AuthService } from '../../services/auth-service';
   templateUrl: './settings.html',
   styles: []
 })
-export class Settings {
+export class Settings implements OnInit {
   // Simple wiring for the RBAC UI. Replace sample data with real API data.
   currentView: 'users' | 'roles' | 'namespaces' | 'processes' = 'users';
 
@@ -43,6 +45,10 @@ export class Settings {
 
   // Auth service (used to determine whether to show admin UI)
   private auth = inject(AuthService);
+  private sessionsService = inject(SessionsService);
+  sessions: SessionDto[] = [];
+  loadingSessions = false;
+  currentJti: string | null = null;
   // Flag that controls RBAC visibility — true only when the current user is admin
   canViewRbac: boolean = this.auth.isAdmin();
 
@@ -53,6 +59,43 @@ export class Settings {
       // For now we keep sample data and log the selection.
       // console.debug('RBAC view changed to', this.currentView);
     }
+  }
+
+  ngOnInit(): void {
+    this.loadSessions();
+  }
+
+  loadSessions() {
+    this.loadingSessions = true;
+    this.sessionsService.listMySessions().subscribe({
+      next: s => {
+        this.sessions = s || [];
+        this.currentJti = this.auth.getJti();
+        this.loadingSessions = false;
+      },
+      error: _err => {
+        this.sessions = [];
+        this.loadingSessions = false;
+      }
+    });
+  }
+
+  revokeSession(jti: string) {
+    if (!jti) return;
+    this.sessionsService.revokeSession(jti).subscribe({ next: () => this.loadSessions(), error: () => this.loadSessions() });
+  }
+
+  revokeOtherSessions() {
+    const keep = this.auth.getJti() ?? undefined;
+    this.sessionsService.revokeOtherSessions(keep).subscribe({ next: () => this.loadSessions(), error: () => this.loadSessions() });
+  }
+
+  getDeviceIcon(os?: string | null): string {
+    if (!os) return 'devices';
+    const s = (os || '').toLowerCase();
+    if (s.includes('windows')) return 'desktop_windows';
+    if (s.includes('android') || s.includes('iphone') || s.includes('ipad') || s.includes('ios')) return 'smartphone';
+    return 'devices';
   }
 
   create() {

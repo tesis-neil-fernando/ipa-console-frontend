@@ -13,6 +13,7 @@
     </ng-template>
   </mat-card-content>
 </mat-card>
+
 <!--
 <mat-card appearance="outlined">
   <mat-card-header>
@@ -72,7 +73,7 @@
     </div>
   </mat-card-content>
 </mat-card>
-
+-->
 <mat-card appearance="outlined">
   <mat-card-header>
     <mat-card-title>Seguridad</mat-card-title>
@@ -82,7 +83,7 @@
     <div style="margin:12px 0; padding:12px; border-radius:8px; border:1px solid rgba(0,0,0,0.06);">
       <h2 style="margin:0 0 12px; display:flex; align-items:center; gap:8px;"><mat-icon>manage_accounts</mat-icon> Sesiones activas</h2>
 
-      <div style="margin-bottom:12px; display:flex; justify-content:flex-end;"><button mat-stroked-button color="warn">Cerrar otras sesiones</button></div>
+  <div style="margin-bottom:12px; display:flex; justify-content:flex-end;"><button mat-stroked-button color="warn" (click)="revokeOtherSessions()">Cerrar otras sesiones</button></div>
 
       <table class="mat-elevation-z1" style="width:100%">
         <thead>
@@ -95,18 +96,31 @@
             <th>Acciones</th>
           </tr>
         </thead>
-        <tbody>
-          <tr>
+        <tbody *ngIf="!loadingSessions && sessions.length; else noSessionsTpl">
+          <tr *ngFor="let s of sessions">
             <td>
-              <div style="display:flex; align-items:center; gap:8px;"><mat-icon>desktop_windows</mat-icon><div><div style="font-weight:600">Laptop</div><div style="font-size:12px; opacity:.7">Mozilla/5.0</div></div></div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <mat-icon>{{ getDeviceIcon(s.os) }}</mat-icon>
+                <div>
+                  <div style="font-weight:600">{{ s.os || 'Dispositivo' }}</div>
+                  <div style="font-size:12px; opacity:.7">{{ s.userAgent }}</div>
+                </div>
+              </div>
             </td>
-            <td>192.0.2.1</td>
+            <td>{{ s.ipAddress || '—' }}</td>
             <td>—</td>
-            <td>Hace 10 min</td>
-            <td><mat-icon color="primary">check_circle</mat-icon></td>
-            <td><button mat-button color="warn">Cerrar</button></td>
+            <td>{{ s.lastAccessAt ? (s.lastAccessAt | date:'short') : (s.issuedAt ? (s.issuedAt | date:'short') : '—') }}</td>
+            <td>
+              <mat-icon *ngIf="s.jti === currentJti" color="primary">check_circle</mat-icon>
+            </td>
+            <td><button mat-button color="warn" (click)="revokeSession(s.jti)" [disabled]="s.jti === currentJti">Cerrar</button></td>
           </tr>
         </tbody>
+        <ng-template #noSessionsTpl>
+          <tbody>
+            <tr><td colspan="6" style="padding:16px; text-align:center;">No hay sesiones activas registradas.</td></tr>
+          </tbody>
+        </ng-template>
       </table>
 
       <mat-divider style="margin:12px 0;"></mat-divider>
@@ -128,5 +142,3 @@
     </div>
   </mat-card-content>
 </mat-card>
-
--->

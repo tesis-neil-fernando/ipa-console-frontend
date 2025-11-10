@@ -87,4 +87,13 @@ export class AuthService {
       return false;
     }
   }
+
+  /**
+   * Return the token JTI claim if present.
+   */
+  getJti(): string | null {
+    const p = this.getTokenPayload();
+    if (!p) return null;
+    return p.jti ?? p.jti?.toString() ?? null;
+  }
 }
