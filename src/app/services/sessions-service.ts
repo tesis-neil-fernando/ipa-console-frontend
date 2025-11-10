@@ -24,6 +24,10 @@ export class SessionsService {
     return this.http.get<SessionDto[]>(this.apiUrl);
   }
 
+  getNamespaceScope(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/namespace-scope`);
+  }
+
   revokeSession(jti: string) {
     // use hard delete to remove session rows so the UI does not show revoked entries
     return this.http.delete(`${this.apiUrl}/${encodeURIComponent(jti)}?hard=true`);

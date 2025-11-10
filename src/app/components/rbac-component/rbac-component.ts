@@ -20,6 +20,7 @@ import { RbacCreateDialogComponent, RbacCreateDialogResult } from '../../compone
 import { RbacUpdateDialogComponent, RbacUpdateDialogResult } from '../../components/rbac-update-dialog/rbac-update-dialog';
 import { RbacService, RoleRbacDto, UserRbacDto, RoleRefDto, NamespaceRbacDto, ProcessRbacDto, CreateUserRequest, CreateUserResponse } from '../../services/rbac-service';
 import { GeneratedPasswordDialogComponent, GeneratedPasswordDialogData } from '../../components/generated-password-dialog/generated-password-dialog';
+import { ChangePasswordDialogComponent } from '../../components/change-password-dialog/change-password-dialog';
 
 @Component({
   selector: 'app-rbac-component',
@@ -39,7 +40,8 @@ import { GeneratedPasswordDialogComponent, GeneratedPasswordDialogData } from '.
     MatInputModule,
     MatSelectModule,
     MatDialogModule,
-    MatAutocompleteModule
+  MatAutocompleteModule,
+  ChangePasswordDialogComponent
 
   ],
   templateUrl: './rbac-component.html',
@@ -112,6 +114,25 @@ export class RbacComponent implements OnInit {
     if (!r) return '';
     return typeof r === 'string' ? r : (r.name ?? '');
   };
+
+  /**
+   * Open the change-password dialog (admin action). Does not ask for current password.
+   * On success shows the newly set password in the generated-password dialog so the admin can copy it.
+   */
+  changePassword(user: UserRbacDto): void {
+    const ref = this.dialog.open(ChangePasswordDialogComponent, { data: { username: user.username } });
+    ref.afterClosed().subscribe((pwd: string | null) => {
+      if (!pwd) return;
+      // call backend to update password (admin operation)
+      this.rbac.updatePassword({ id: user.id, password: pwd }).subscribe({
+        next: () => {
+          // show generated-password dialog so admin can copy/share the password
+          this.dialog.open(GeneratedPasswordDialogComponent, { data: { username: user.username, password: pwd } as GeneratedPasswordDialogData });
+        },
+        error: () => this.snack('No se pudo actualizar la contraseña')
+      });
+    });
+  }
 
   // displayWith helper for namespaces autocomplete
   displayNamespace = (n: NamespaceRbacDto | string | null) => {

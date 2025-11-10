@@ -49,6 +49,10 @@ export class Settings implements OnInit {
   sessions: SessionDto[] = [];
   loadingSessions = false;
   currentJti: string | null = null;
+  // Namespace scope
+  namespaceScope: { id: number; name: string; actions: string[] }[] = [];
+  globalScope: Record<string, boolean> = {};
+  globalKeys: string[] = [];
   // Flag that controls RBAC visibility — true only when the current user is admin
   canViewRbac: boolean = this.auth.isAdmin();
 
@@ -63,6 +67,7 @@ export class Settings implements OnInit {
 
   ngOnInit(): void {
     this.loadSessions();
+    this.loadNamespaceScope();
   }
 
   loadSessions() {
@@ -76,6 +81,24 @@ export class Settings implements OnInit {
       error: _err => {
         this.sessions = [];
         this.loadingSessions = false;
+      }
+    });
+  }
+
+  loadNamespaceScope() {
+    this.sessionsService.getNamespaceScope().subscribe({
+      next: (res: any) => {
+        this.namespaceScope = Array.isArray(res?.namespaces) ? res.namespaces : [];
+        // copy any global flags
+        this.globalScope = {};
+        for (const k of Object.keys(res || {})) {
+          if (k.startsWith('global_')) this.globalScope[k] = !!res[k];
+        }
+        this.globalKeys = Object.keys(this.globalScope);
+      },
+      error: () => {
+        this.namespaceScope = [];
+        this.globalScope = {};
       }
     });
   }

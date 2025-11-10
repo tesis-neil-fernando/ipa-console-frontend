@@ -128,16 +128,31 @@
       <section>
         <h3 style="margin:16px 0 8px; display:flex; align-items:center; gap:8px;"><mat-icon>domain</mat-icon> Alcance por namespace</h3>
 
-        <div style="display:grid; gap:12px;">
-          <div class="scope-card">
-            <div class="scope-title">
-              <div class="ns-badge">inteligencia_comercial</div>
-              <div style="flex:1 1 auto"></div>
-              <div style="font-size:12px; opacity:.8">Roles: admin, viewer</div>
-            </div>
-            <div style="display:flex; gap:8px; flex-wrap:wrap;"><mat-chip color="primary" selected>read</mat-chip><mat-chip color="primary" selected>write</mat-chip></div>
+        <!-- global flags -->
+        <div style="display:flex; gap:8px; align-items:center; margin-bottom:12px;">
+          <div *ngFor="let key of (globalKeys | slice:0:10)">
+            <mat-chip color="accent" selected *ngIf="globalScope[key]">{{ key.replace('global_','') | uppercase }} (global)</mat-chip>
           </div>
         </div>
+
+        <div style="display:grid; gap:12px;">
+          <div *ngIf="namespaceScope?.length; else noNsTpl">
+            <div *ngFor="let ns of namespaceScope" class="scope-card" style="padding:12px; border:1px solid rgba(0,0,0,0.06); border-radius:8px;">
+              <div class="scope-title" style="display:flex; align-items:center; gap:8px;">
+                <div class="ns-badge" style="font-weight:700">{{ ns.name }}</div>
+                <div style="flex:1 1 auto"></div>
+                <div style="font-size:12px; opacity:.8">Actions: {{ ns.actions.join(', ') }}</div>
+              </div>
+              <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">
+                <mat-chip *ngFor="let a of ns.actions" color="primary" selected>{{ a }}</mat-chip>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <ng-template #noNsTpl>
+          <div style="padding:12px; color:rgba(0,0,0,.6)">No tienes alcance por namespace o no hay namespaces asignados.</div>
+        </ng-template>
       </section>
     </div>
   </mat-card-content>

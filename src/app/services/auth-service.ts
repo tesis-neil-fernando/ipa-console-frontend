@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { tap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
+import { SessionsService } from './sessions-service';
 
 @Injectable({
   providedIn: 'root'
@@ -11,6 +12,7 @@ export class AuthService {
   private tokenKey = 'auth_token';
 
   private http = inject(HttpClient);
+  private sessionsService = inject(SessionsService);
 
   login(credentials: { username: string; password: string }) {
     return this.http.post<{ accessToken: string }>(`${this.apiUrl}/signin`, credentials).pipe(
@@ -34,6 +36,16 @@ export class AuthService {
   }
 
   logout() {
+    // attempt to close the server-side session (best-effort) before removing local token
+    try {
+      const jti = this.getJti();
+      if (jti) {
+        // call revoke (hard delete) but don't block logout on failure
+        this.sessionsService.revokeSession(jti).subscribe({ next: () => { /* ok */ }, error: () => { /* ignore */ } });
+      }
+    } catch {
+      // ignore
+    }
     localStorage.removeItem(this.tokenKey);
   }
 

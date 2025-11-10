@@ -17,7 +17,7 @@
 </mat-toolbar>
 
 <mat-drawer-container class="main-container mat-app-background">
-    <mat-drawer class="sidenav" mode="side" opened>
+    <mat-drawer class="sidenav" mode="side" opened [disableClose]="true">
         <button matButton routerLinkActive="active-button" routerLink="/console/dashboard"><mat-icon>dashboard</mat-icon>Panel de control</button>
         <button matButton routerLinkActive="active-button" routerLink="/console/processes"><mat-icon>build</mat-icon>Procesos</button>
         <button matButton routerLinkActive="active-button" routerLink="/console/logs"><mat-icon>list</mat-icon>Registros</button>
