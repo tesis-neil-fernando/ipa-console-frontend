@@ -22,4 +22,15 @@ export class MainLayout {
   logout() {
     this.auth.logout();
   }
+
+  // Expose a stable property the template can bind to. Keep the logic here to avoid
+  // calling service parsing repeatedly from the template.
+  get userName(): string {
+    try {
+      const name = this.auth.getDisplayName ? this.auth.getDisplayName() : null;
+      return name || 'Usuario';
+    } catch {
+      return 'Usuario';
+    }
+  }
 }

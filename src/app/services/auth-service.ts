@@ -108,4 +108,39 @@ export class AuthService {
     if (!p) return null;
     return p.jti ?? p.jti?.toString() ?? null;
   }
+
+  /**
+   * Return a human-friendly display name for the current user.
+   * Checks several common JWT claims in order of preference.
+   * Returns null when no suitable claim is present.
+   */
+  getDisplayName(): string | null {
+    const p = this.getTokenPayload();
+    if (!p) return null;
+
+    // Common claims that may contain a full name
+    const nameClaims = ['name', 'fullName', 'full_name', 'given_name', 'family_name', 'preferred_username', 'preferredName', 'username', 'sub'];
+
+    // If there is a single 'name'-like claim use it
+    if (p.name && typeof p.name === 'string' && p.name.trim()) return p.name.trim();
+    if (p.fullName && typeof p.fullName === 'string' && p.fullName.trim()) return p.fullName.trim();
+
+    // If there are separate given + family name claims, join them
+    if (p.given_name && p.family_name) {
+      const g = typeof p.given_name === 'string' ? p.given_name.trim() : '';
+      const f = typeof p.family_name === 'string' ? p.family_name.trim() : '';
+      const joined = `${g} ${f}`.trim();
+      if (joined) return joined;
+    }
+
+    // Try other common fallbacks (preferred_username, sub) but prefer non-technical values
+    if (p.preferred_username && typeof p.preferred_username === 'string' && p.preferred_username.trim()) {
+      // avoid returning a plain username when a real name is expected; still return it as last resort
+      return p.preferred_username.trim();
+    }
+
+    if (p.sub && typeof p.sub === 'string' && p.sub.trim()) return p.sub.trim();
+
+    return null;
+  }
 }

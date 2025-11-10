@@ -8,7 +8,7 @@
     </button>
     <button matButton color="accent" [matMenuTriggerFor]="account" aria-label="Example icon-button with menu icon">
         <mat-icon>account_circle</mat-icon>
-        Fernando
+        {{ userName }}
     </button>
     <mat-menu #account="matMenu">
         <button mat-menu-item>Preferencias <mat-icon>settings</mat-icon></button>
