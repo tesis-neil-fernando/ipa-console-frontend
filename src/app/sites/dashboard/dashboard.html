@@ -1,64 +1,66 @@
 <div class="dashboard-container">
     <!-- Left: Charts -->
     <div class="charts-container">
-        <mat-card appearance="outlined">
+        <mat-card class="chart-card pie-card" appearance="outlined">
             <mat-card-header>
-                <mat-card-title>Estado de los Nodos</mat-card-title>
+                <mat-card-title>Procesos por estado (Activos / Inactivos)</mat-card-title>
             </mat-card-header>
             <mat-card-content>
-                <canvas baseChart [data]="pieChartData" [labels]="pieChartLabels" [type]="pieChartType"></canvas>
+                <div class="chart-wrapper">
+                    <canvas class="chart-canvas" baseChart [data]="pieChartData" [labels]="pieChartLabels" [type]="pieChartType" [options]="pieChartOptions"></canvas>
+                </div>
             </mat-card-content>
         </mat-card>
 
-        <mat-card appearance="outlined">
+        <mat-card class="chart-card" appearance="outlined">
             <mat-card-header>
-                <mat-card-title>Eventos por Tipo</mat-card-title>
+                <mat-card-title>Ejecuciones por día</mat-card-title>
             </mat-card-header>
             <mat-card-content>
-                <canvas baseChart [data]="barChartData" [labels]="barChartLabels" [type]="barChartType"></canvas>
+                <div class="chart-wrapper">
+                    <canvas class="chart-canvas" baseChart [data]="barChartData" [labels]="barChartLabels" [type]="barChartType" [options]="barChartOptions"></canvas>
+                </div>
             </mat-card-content>
+            <mat-card-actions>
+                <button mat-button (click)="loadExecutionsByDay(7)">Últimos 7 días</button>
+                <button mat-button (click)="loadExecutionsByDay(14)">Últimos 14 días</button>
+                <button mat-button (click)="loadExecutionsByDay(30)">Últimos 30 días</button>
+            </mat-card-actions>
         </mat-card>
 
-        <mat-card appearance="outlined">
+        <mat-card class="chart-card" appearance="outlined">
             <mat-card-header>
-                <mat-card-title>Procesos Fallidos (Semanal)</mat-card-title>
+                <mat-card-title>Errores por día (últimos N días)</mat-card-title>
             </mat-card-header>
             <mat-card-content>
-                <canvas baseChart [data]="lineChartData" [labels]="lineChartLabels" [type]="lineChartType"
-                    [options]="lineChartOptions"></canvas>
+                <div class="chart-wrapper">
+                    <canvas class="chart-canvas" baseChart [data]="lineChartData" [labels]="lineChartLabels" [type]="lineChartType"
+                        [options]="lineChartOptions"></canvas>
+                </div>
             </mat-card-content>
+            <mat-card-actions>
+                <button mat-button (click)="loadErrorsByDay(7)">Últimos 7 días</button>
+                <button mat-button (click)="loadErrorsByDay(14)">Últimos 14 días</button>
+                <button mat-button (click)="loadErrorsByDay(30)">Últimos 30 días</button>
+            </mat-card-actions>
         </mat-card>
 
-        <mat-card appearance="outlined">
+        <mat-card class="chart-card span-2" appearance="outlined">
             <mat-card-header>
-                <mat-card-title>Carga de Robots</mat-card-title>
+                <mat-card-title>Estado por proceso</mat-card-title>
             </mat-card-header>
             <mat-card-content>
-                <canvas baseChart [data]="stackedBarChartData" [labels]="stackedBarChartLabels"
-                    [type]="stackedBarChartType" [options]="stackedBarChartOptions"></canvas>
+                <div class="chart-wrapper">
+                    <canvas class="chart-canvas" baseChart [data]="stackedBarChartData" [labels]="stackedBarChartLabels"
+                        [type]="stackedBarChartType" [options]="stackedBarChartOptions"></canvas>
+                </div>
             </mat-card-content>
+            <mat-card-actions>
+                <button mat-button (click)="loadErrorPercentagePerProcess(7)">Últimos 7 días</button>
+                <button mat-button (click)="loadErrorPercentagePerProcess(30)">Últimos 30 días</button>
+            </mat-card-actions>
         </mat-card>
     </div>
 
-    <!-- Right: Sidebar -->
-    <div class="sidebar-container">
-        <mat-card appearance="outlined">
-            <mat-card-header>
-                <mat-card-title>Información General</mat-card-title>
-            </mat-card-header>
-            <mat-card-content>
-                <p>Panel de control para ver información general de los procesos y el estado del sistema.
-                </p>
-            </mat-card-content>
-        </mat-card>
-
-        <mat-card appearance="outlined">
-            <mat-card-header>
-                <mat-card-title>Detalles Adicionales</mat-card-title>
-            </mat-card-header>
-            <mat-card-content>
-                <p>En caso de necesitar más información, por favor consulte la documentación o contacte al soporte técnico.</p>
-            </mat-card-content>
-        </mat-card>
-    </div>
+    <!-- Sidebar removed to improve chart layout and proportions -->
 </div>
