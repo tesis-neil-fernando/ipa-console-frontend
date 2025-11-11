@@ -63,7 +63,6 @@
         <mat-card-header>
           <mat-card-title>
             Configuración de proceso
-            <span *ngIf="selectedProcess"> [{{ editedProcess?.name }}]</span>
             <span *ngIf="!selectedProcess"> [sin seleccionar]</span>
           </mat-card-title>
           <mat-card-subtitle>Detalles y configuraciones</mat-card-subtitle>
@@ -75,17 +74,7 @@
 
           <div *ngIf="selectedProcess">
 
-            <div class="process-meta">
-              <mat-form-field appearance="fill" style="width:100%">
-                <mat-label>Nombre</mat-label>
-                <input matInput [(ngModel)]="editedProcess.name" name="proc-name">
-              </mat-form-field>
-
-              <mat-form-field appearance="fill" style="width:100%">
-                <mat-label>Descripción</mat-label>
-                <textarea matInput rows="3" [(ngModel)]="editedProcess.description" name="proc-desc"></textarea>
-              </mat-form-field>
-            </div>
+            <!-- Name and Description have been removed from this editor and are not sent to the backend -->
 
             <div class="params-list">
               <div *ngFor="let p of editedParameters" class="param-row">

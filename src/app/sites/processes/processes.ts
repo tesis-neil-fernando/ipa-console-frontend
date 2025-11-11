@@ -229,8 +229,8 @@ export class Processes implements OnInit {
   validateCronExpr(expr: string): boolean {
     if (!expr || typeof expr !== 'string') return false;
     const parts = expr.trim().split(/\s+/);
-    // Typical cron: 5 (min hour dom mon dow) or 6/7 when seconds/year are used
-    if (parts.length < 5 || parts.length > 7) return false;
+  // Enforce exactly 6 parts (seconds + min hour dom mon dow) as requested
+  if (parts.length !== 6) return false;
 
     // token matches: '*', '*/n', 'n', 'n-m', 'n/m' and lists like '1,2,3' and combinations
   const tokenRe = /^(?:\*|\?|(?:\d+)(?:-\d+)?(?:\/\d+)?|\*\/\d+)(?:,(?:\*|\?|(?:\d+)(?:-\d+)?(?:\/\d+)?|\*\/\d+))*$/;
@@ -374,9 +374,8 @@ export class Processes implements OnInit {
       return copy;
     });
 
+    // Do not send name/description from the client anymore; backend will keep the authoritative values.
     const body: any = {
-      name: this.editedProcess.name,
-      description: this.editedProcess.description,
       parameters: paramsToSend
     };
 
@@ -385,10 +384,9 @@ export class Processes implements OnInit {
         // Update local processes list to reflect changes (name/description/parameters)
         const idx = this.processes.findIndex(p => p.id === this.selectedProcess.id);
         if (idx !== -1) {
-          // Update only the metadata optimistically (name/description). Do not replace parameters
-          // with the client-side payload (which may contain stringified booleans) because that
-          // causes the UI to temporarily reflect server-incompatible values (e.g. checkboxes).
-          this.processes[idx] = { ...this.processes[idx], name: body.name, description: body.description };
+          // We don't change name/description from the client anymore. Keep existing list entry
+          // (parameters will be refreshed below when we fetch the updated process)
+          this.processes[idx] = { ...this.processes[idx] };
         }
         // Keep selection open. Refresh the process details from the server so we show any server-side changes
         const pid = String(this.selectedProcess.id);
